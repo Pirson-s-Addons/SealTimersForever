@@ -41,6 +41,9 @@ local SPACING = 4
 local RECAST_GRACE = 1
 -- Cuanto esperar tras el lanzamiento para releer el aura ya renovada
 local RECAST_REFRESH = 0.2
+-- En Forever todos los sellos duran 30 s (datos de habilidades del paladin). Si
+-- el aura de un sello se llega a leer, manda su duracion real.
+local DEFAULT_DURATION = 30
 local DEFAULTS = { locked = true, scale = 1, point = "CENTER", x = 0, y = -150 }
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
@@ -217,12 +220,30 @@ local function Learn(name, total)
     end
 end
 
+local function SealDuration(name)
+    return db.durations[name] or DEFAULT_DURATION
+end
+
+-- Si el aura es legible, aprende de paso su duracion real
+local function LearnFromAura(name, id)
+    local duration = C_UnitAuras.GetAuraDuration("player", id)
+    if duration:HasSecretValues() or duration:IsZero() then return end
+    Learn(name, duration:GetTotalDuration())
+end
+
 local function StartTimer(name)
     local icon = icons[name]
     if not icon then return end
     local cooldown = icon.cooldown
-    if icon.auraInstanceID then
-        -- Tiempo exacto del juego
+    if icon.castAt then
+        -- Lanzado por el jugador: su duracion desde el lanzamiento. Relanzar un
+        -- sello lo renueva entero, asi que es exacto y no depende de nada secreto.
+        if icon.auraInstanceID then LearnFromAura(name, icon.auraInstanceID) end
+        cooldown:SetCooldown(icon.castAt, SealDuration(name))
+        icon.hasTimer = true
+        Debug(("%s: %.1f s desde el lanzamiento"):format(name, SealDuration(name)))
+    elseif icon.auraInstanceID then
+        -- Sin lanzamiento visto (p. ej. tras /reload): el tiempo del aura
         local duration = C_UnitAuras.GetAuraDuration("player", icon.auraInstanceID)
         -- HasSecretValues nunca es secreto (ReturnsNeverSecret). Con valores
         -- secretos el objeto solo se le pasa al Cooldown, sin preguntarle nada.
@@ -244,15 +265,10 @@ local function StartTimer(name)
         icon.hasTimer = true
         Learn(name, duration:GetTotalDuration())
         Debug(name .. ": tiempo del aura")
-    elseif db.durations[name] then
-        -- Aura secreta: la duracion aprendida, desde el lanzamiento
-        cooldown:SetCooldown(icon.castAt or GetTime(), db.durations[name])
-        icon.hasTimer = true
-        Debug(("%s: tiempo aprendido (%.1f s)"):format(name, db.durations[name]))
     else
         icon.hasTimer = false
         cooldown:Clear()
-        Debug(name .. ": sin duracion aprendida todavia")
+        Debug(name .. ": sin tiempo")
     end
 end
 
@@ -293,7 +309,9 @@ end
 -- sello, gana el activo; si no se sabe cual es, la de mas duracion (un eco dura
 -- menos que el sello).
 local function FullScan()
-    local wanted = activeSeal -- HideSeal lo borra
+    -- HideSeal borra el sello activo y cuando se lanzo: se guardan antes
+    local wanted = activeSeal
+    local wantedCastAt = wanted and icons[wanted] and icons[wanted].castAt
     for i = #order, 1, -1 do HideSeal(order[i]) end
     local best, bestTotal
     for _, aura in ipairs(List(C_UnitAuras.GetUnitAuras("player", "HELPFUL"))) do
@@ -309,7 +327,14 @@ local function FullScan()
         end
     end
     activeSeal = nil
-    if best then TrackAura(best) end
+    if best then
+        TrackAura(best)
+        local icon = icons[best.name]
+        if icon and best.name == wanted and wantedCastAt then
+            icon.castAt = wantedCastAt
+            StartTimer(best.name)
+        end
+    end
     Layout()
 end
 
