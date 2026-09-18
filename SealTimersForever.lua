@@ -60,7 +60,13 @@ local DEFAULTS = {
     locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
     swingBar = true, twistWindow = 0.4, twistSound = true,
 }
-local SWING_WIDTH, SWING_HEIGHT = 120, 10
+-- Barra de golpe como la del WeakAura de Kaedin: encima del sello, amarilla
+-- sobre azul oscuro, con el tiempo que queda en el centro y dos lineas.
+local SWING_WIDTH, SWING_HEIGHT = 200, 14
+-- Tiempo global de reutilizacion: la linea roja marca el ultimo momento para
+-- usar una habilidad con GCD sin pisar la ventana de twist.
+-- ponytail: fijo en 1,5 s; si Forever aplica celeridad al GCD, habria que leerlo.
+local GCD = 1.5
 local MAIN_HAND = Enum.PlayerSwingType and Enum.PlayerSwingType.MainHand or 0
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
@@ -179,6 +185,10 @@ local function AcquireIcon()
         icon.cooldown:SetReverse(true)
         icon.cooldown:SetDrawEdge(false)
         icon.cooldown:SetHideCountdownNumbers(false)
+        -- Numeros grandes y amarillos, como los de OmniCC en los WeakAuras
+        local countdown = icon.cooldown:GetCountdownFontString()
+        countdown:SetFont(STANDARD_TEXT_FONT, 18, "OUTLINE")
+        countdown:SetTextColor(1, 0.82, 0)
         -- Brillo de "cambia de sello ya" (zona de twist)
         icon.glow = icon:CreateTexture(nil, "OVERLAY")
         icon.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
@@ -456,11 +466,22 @@ local function SetGlow(on, pulse)
     end
 end
 
--- Zona de twist: los ultimos twistWindow segundos del golpe, en dorado
-local function UpdateTwistZone()
+-- Lineas sobre la barra: roja = ultimo GCD (GCD s antes del golpe), verde =
+-- empieza la ventana de twist (twistWindow s antes del golpe)
+local function PlaceTick(tick, secondsBeforeSwing)
+    local fraction = (swingDuration - secondsBeforeSwing) / swingDuration
+    tick:SetShown(fraction > 0)
+    if fraction > 0 then
+        tick:ClearAllPoints()
+        tick:SetPoint("TOP", swingBar, "TOPLEFT", SWING_WIDTH * fraction, 0)
+        tick:SetPoint("BOTTOM", swingBar, "BOTTOMLEFT", SWING_WIDTH * fraction, 0)
+    end
+end
+
+local function UpdateTicks()
     if not swingDuration or swingDuration <= 0 then return end
-    local fraction = math.min(db.twistWindow / swingDuration, 1)
-    swingBar.zone:SetWidth(math.max(SWING_WIDTH * fraction, 1))
+    PlaceTick(swingBar.gcdTick, GCD)
+    PlaceTick(swingBar.twistTick, db.twistWindow)
 end
 
 local function OnSwingUpdate(self)
@@ -474,33 +495,45 @@ local function OnSwingUpdate(self)
         return
     end
     self:SetValue(math.min(elapsed / swingDuration, 1))
-    local inZone = elapsed >= swingDuration - db.twistWindow and elapsed <= swingDuration
-    SetGlow(inZone and HasEcho(activeSeal), 0.55 + 0.45 * math.sin(GetTime() * 14))
+    self.text:SetFormattedText("%.1f", math.max(swingDuration - elapsed, 0))
+    local inWindow = elapsed >= swingDuration - db.twistWindow and elapsed <= swingDuration
+    SetGlow(inWindow and HasEcho(activeSeal), 0.55 + 0.45 * math.sin(GetTime() * 14))
 end
 
 local function ApplySwingBar()
     -- Desbloqueado se ensena aunque no haya golpes, para colocarla
     local show = db.swingBar and (swingStart ~= nil or not db.locked)
     swingBar:SetShown(show)
-    if not db.locked and not swingStart then swingBar:SetValue(0.7) end
+    if not db.locked and not swingStart then
+        swingDuration = swingDuration or 3.5
+        UpdateTicks()
+        swingBar:SetValue(0.7)
+        swingBar.text:SetText("1.0")
+    end
     if not show then SetGlow(false) end
+end
+
+local function Tick(r, g, b)
+    local tick = swingBar:CreateTexture(nil, "OVERLAY")
+    tick:SetWidth(2)
+    tick:SetColorTexture(r, g, b, 1)
+    return tick
 end
 
 local function CreateSwingBar()
     swingBar = CreateFrame("StatusBar", nil, anchor)
     swingBar:SetSize(SWING_WIDTH, SWING_HEIGHT)
-    swingBar:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
+    swingBar:SetPoint("BOTTOM", anchor, "TOP", 0, 6)
     swingBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
-    swingBar:SetStatusBarColor(0.84, 0.59, 1)
+    swingBar:SetStatusBarColor(0.8, 0.75, 0.05)
     swingBar:SetMinMaxValues(0, 1)
     swingBar.bg = swingBar:CreateTexture(nil, "BACKGROUND")
     swingBar.bg:SetAllPoints()
-    swingBar.bg:SetColorTexture(0, 0, 0, 0.5)
-    swingBar.zone = swingBar:CreateTexture(nil, "OVERLAY")
-    swingBar.zone:SetPoint("TOPRIGHT")
-    swingBar.zone:SetPoint("BOTTOMRIGHT")
-    swingBar.zone:SetWidth(SWING_WIDTH * 0.2)
-    swingBar.zone:SetColorTexture(1, 0.82, 0, 0.45)
+    swingBar.bg:SetColorTexture(0.1, 0.1, 0.45, 0.9)
+    swingBar.gcdTick = Tick(1, 0.1, 0.1)
+    swingBar.twistTick = Tick(0.1, 1, 0.1)
+    swingBar.text = swingBar:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+    swingBar.text:SetPoint("CENTER")
     swingBar:SetScript("OnUpdate", OnSwingUpdate)
     swingBar:Hide()
 end
@@ -517,7 +550,7 @@ local function OnSwing(duration, swingType)
     end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
-    UpdateTwistZone()
+    UpdateTicks()
     ApplySwingBar()
 end
 
@@ -554,7 +587,7 @@ local function CreateAnchor()
     anchor.bg:SetAllPoints()
     anchor.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
     anchor.label = anchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    anchor.label:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", 0, 2)
+    anchor.label:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
     anchor.label:SetText(BRAND .. L.TITLE .. "|r - " .. L.DRAG_HINT)
 
     ApplyLock()
@@ -606,7 +639,7 @@ local function CreateOptions()
 
     local window = Settings.RegisterAddOnSetting(category, "SealTimersForever_TwistWindow", "twistWindow",
         db, Settings.VarType.Number, L.TWIST_WINDOW, DEFAULTS.twistWindow)
-    window:SetValueChangedCallback(UpdateTwistZone)
+    window:SetValueChangedCallback(UpdateTicks)
     local windowOptions = Settings.CreateSliderOptions(0.1, 1, 0.1)
     windowOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
         return string.format("%.1f s", value)
