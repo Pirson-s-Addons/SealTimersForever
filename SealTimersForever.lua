@@ -8,13 +8,14 @@
 -- muestra por defecto. Regla de todo el fichero: mirar IsSecret ANTES de tocar
 -- un valor que venga de un aura.
 --
--- Dos vias para el tiempo:
---   * Aura legible: el del juego. GetAuraDuration da un objeto de duracion que
---     va tal cual a un Cooldown con la cuenta atras visible.
---   * Aura secreta: el sello se detecta por su LANZAMIENTO. UNIT_SPELLCAST_*
---     solo es secreto si la unidad no es el jugador ni su mascota, asi que el
---     hechizo que lanza el jugador siempre se lee. El tiempo sale de la duracion
---     aprendida de ese sello con el aura legible (se guarda en la BD).
+-- El tiempo:
+--   * Sello lanzado por el jugador (via principal): se detecta por su
+--     LANZAMIENTO. UNIT_SPELLCAST_* solo es secreto si la unidad no es el
+--     jugador ni su mascota, asi que siempre se lee. Cuenta desde el
+--     lanzamiento con la duracion aprendida o 30 s (la de todo sello en
+--     Forever). En la beta las auras de los sellos no se leen ni fuera de combate.
+--   * Sello ya activo sin lanzamiento visto (tras /reload): el tiempo del aura.
+--     GetAuraDuration da un objeto de duracion que va tal cual a un Cooldown.
 -- El evento del lanzamiento llega antes de que el juego renueve el aura, asi
 -- que el tiempo se relee un instante despues. Al salir de combate se relee todo.
 --
@@ -44,6 +45,8 @@ local RECAST_REFRESH = 0.2
 -- En Forever todos los sellos duran 30 s (datos de habilidades del paladin). Si
 -- el aura de un sello se llega a leer, manda su duracion real.
 local DEFAULT_DURATION = 30
+-- Morado de la marca, el mismo del titulo en todos los addons de Pirson
+local BRAND = "|cffd597ff"
 local DEFAULTS = { locked = true, scale = 1, point = "CENTER", x = 0, y = -150 }
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
@@ -79,7 +82,7 @@ local function List(value)
 end
 
 local function Debug(msg)
-    if debugMode then print("|cffd597ffSTF|r " .. msg) end
+    if debugMode then print(BRAND .. "STF|r " .. msg) end
 end
 
 --------------------------------------------------
@@ -440,7 +443,7 @@ local function CreateAnchor()
     anchor.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
     anchor.label = anchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     anchor.label:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", 0, 2)
-    anchor.label:SetText(L.TITLE .. " - " .. L.DRAG_HINT)
+    anchor.label:SetText(BRAND .. L.TITLE .. "|r - " .. L.DRAG_HINT)
 
     ApplyLock()
     ApplyScale()
@@ -450,7 +453,7 @@ end
 -- OPCIONES
 --------------------------------------------------
 local function Check()
-    print("|cffd597ffSeal Timers Forever|r: " .. L.CHECK_HEADER)
+    print(BRAND .. "Seal Timers Forever|r: " .. L.CHECK_HEADER)
     local any = false
     for spellID, name in pairs(knownSeals) do
         any = true
@@ -467,7 +470,8 @@ local function Check()
 end
 
 local function CreateOptions()
-    local category = Settings.RegisterVerticalLayoutCategory("Seal Timers Forever")
+    -- En morado tambien en Opciones > AddOns, como en la lista de addons
+    local category = Settings.RegisterVerticalLayoutCategory(BRAND .. "Seal Timers Forever|r")
 
     local lock = Settings.RegisterAddOnSetting(category, "SealTimersForever_Locked", "locked",
         db, Settings.VarType.Boolean, L.LOCK, DEFAULTS.locked)
@@ -491,12 +495,12 @@ local function CreateOptions()
         if command == "check" then return Check() end
         if command == "debug" then
             debugMode = not debugMode
-            print("|cffd597ffSeal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
+            print(BRAND .. "Seal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
             return
         end
         if command == "reset" then
             wipe(db.durations)
-            print("|cffd597ffSeal Timers Forever|r: " .. L.RESET_DONE)
+            print(BRAND .. "Seal Timers Forever|r: " .. L.RESET_DONE)
             return
         end
         Settings.OpenToCategory(category:GetID())
