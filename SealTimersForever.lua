@@ -2,18 +2,26 @@
 -- restante, en un bloque que se mueve y cambia de tamano. Solo WoW Forever.
 --
 -- Valores secretos: en Forever, con restricciones activas (combate, encuentro,
--- PvP...), los datos de las auras son secretos para los addons salvo que
--- Blizzard marque el hechizo como "nunca secreto". Por eso hay dos vias:
---   * Aura legible: el tiempo es el del juego. GetAuraDuration da un objeto de
---     duracion que va tal cual a un Cooldown con la cuenta atras visible.
+-- PvP...), los datos de las auras son secretos para los addons, incluido todo
+-- el contenido de UNIT_AURA. Con un secreto no se puede ni comparar (tampoco
+-- con nil) ni preguntar si es verdadero: da un error de Lua, que el juego no
+-- muestra por defecto. Regla de todo el fichero: mirar IsSecret ANTES de tocar
+-- un valor que venga de un aura.
+--
+-- Dos vias para el tiempo:
+--   * Aura legible: el del juego. GetAuraDuration da un objeto de duracion que
+--     va tal cual a un Cooldown con la cuenta atras visible.
 --   * Aura secreta: el sello se detecta por su LANZAMIENTO. UNIT_SPELLCAST_*
 --     solo es secreto si la unidad no es el jugador ni su mascota, asi que el
---     hechizo que lanza el jugador siempre se lee. El tiempo sale de la ultima
---     duracion vista de ese sello con el aura legible (se guarda en la BD).
--- Al salir de combate se relee todo, por si algo se desajusto.
+--     hechizo que lanza el jugador siempre se lee. El tiempo sale de la duracion
+--     aprendida de ese sello con el aura legible (se guarda en la BD).
+-- El evento del lanzamiento llega antes de que el juego renueve el aura, asi
+-- que el tiempo se relee un instante despues. Al salir de combate se relee todo.
 --
 -- En Forever solo hay un sello activo: al lanzar otro, el anterior se sustituye
--- (y deja un "Eco", que no es un sello). El Juicio ya no consume el sello.
+-- y deja un "Eco". Si el eco lleva el nombre del sello viejo no debe pasar por
+-- el sello activo ni ensenar su duracion corta: el activo es el ultimo lanzado,
+-- y la duracion aprendida solo puede crecer. El Juicio ya no consume el sello.
 -- Contrastado con Gethe/wow-ui-source, rama "forever".
 
 local _, ns = ...
@@ -31,25 +39,49 @@ local SPACING = 4
 -- Margen para que un sello recien lanzado no se de por perdido cuando su aura
 -- vieja desaparece justo despues de relanzarlo.
 local RECAST_GRACE = 1
+-- Cuanto esperar tras el lanzamiento para releer el aura ya renovada
+local RECAST_REFRESH = 0.2
 local DEFAULTS = { locked = true, scale = 1, point = "CENTER", x = 0, y = -150 }
+-- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
+-- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
+local DURATIONS_VERSION = 1
+local EMPTY = {}
 
 local db
 local sealNames, sealPrefix = {}, nil
 local knownSeals = {}          -- spellID del libro de hechizos -> nombre del sello
 local icons, order, pool = {}, {}, {}  -- nombre del sello -> icono
+local activeSeal               -- nombre del ultimo sello lanzado (o elegido al releer)
+local debugMode = false
 local anchor
 
 --------------------------------------------------
--- QUE ES UN SELLO
+-- VALORES SECRETOS
 --------------------------------------------------
 local function IsSecret(value)
     return issecretvalue ~= nil and issecretvalue(value)
 end
 
+-- Se puede usar: ni secreto ni nil. IsSecret va primero: comparar un secreto
+-- con nil ya es un error.
 local function Readable(value)
-    return value ~= nil and not IsSecret(value)
+    if IsSecret(value) then return false end
+    return value ~= nil
 end
 
+-- Una lista del evento, o vacia si es secreta o no hay
+local function List(value)
+    if not Readable(value) then return EMPTY end
+    return value
+end
+
+local function Debug(msg)
+    if debugMode then print("|cffd597ffSTF|r " .. msg) end
+end
+
+--------------------------------------------------
+-- QUE ES UN SELLO
+--------------------------------------------------
 local function CommonPrefix(a, b)
     local i = 0
     while i < #a and i < #b and a:byte(i + 1) == b:byte(i + 1) do i = i + 1 end
@@ -150,7 +182,12 @@ HideSeal = function(name)
     local icon = icons[name]
     if not icon then return end
     icon:Hide()
-    icon.sealName, icon.auraInstanceID, icon.hasTimer, icon.castAt = nil, nil, nil, nil
+    -- El temporizador se para antes de volver al pool: un OnCooldownDone tardio
+    -- no debe quitar el sello que reutilice este icono.
+    icon.hasTimer = false
+    icon.cooldown:Clear()
+    icon.sealName, icon.auraInstanceID, icon.castAt = nil, nil, nil
+    if activeSeal == name then activeSeal = nil end
     pool[#pool + 1] = icon
     icons[name] = nil
     for i = #order, 1, -1 do
@@ -167,33 +204,55 @@ end
 
 local function AuraExists(id)
     local data = C_UnitAuras.GetAuraDataByAuraInstanceID("player", id)
-    return IsSecret(data) or data ~= nil
+    if IsSecret(data) then return true end
+    return data ~= nil
+end
+
+-- La duracion de un sello es fija: solo crece. Asi un eco corto con el mismo
+-- nombre, o un aura a medias, no la estropea.
+local function Learn(name, total)
+    if Readable(total) and total > (db.durations[name] or 0) then
+        db.durations[name] = total
+        Debug(("aprendido %s = %.1f s"):format(name, total))
+    end
 end
 
 local function StartTimer(name)
     local icon = icons[name]
+    if not icon then return end
     local cooldown = icon.cooldown
     if icon.auraInstanceID then
         -- Tiempo exacto del juego
         local duration = C_UnitAuras.GetAuraDuration("player", icon.auraInstanceID)
+        -- HasSecretValues nunca es secreto (ReturnsNeverSecret). Con valores
+        -- secretos el objeto solo se le pasa al Cooldown, sin preguntarle nada.
+        if duration:HasSecretValues() then
+            cooldown:SetCooldownFromDurationObject(duration)
+            icon.hasTimer = true
+            Debug(name .. ": tiempo del aura (secreto)")
+            return
+        end
         local isZero = duration:IsZero()
-        if Readable(isZero) and isZero then
+        if isZero then
             -- Sello permanente: sin temporizador (uno de 0 s acabaria al momento)
             icon.hasTimer = false
             cooldown:Clear()
+            Debug(name .. ": sin duracion")
             return
         end
         cooldown:SetCooldownFromDurationObject(duration)
         icon.hasTimer = true
-        local total = duration:GetTotalDuration()
-        if Readable(total) and total > 0 then db.durations[name] = total end
+        Learn(name, duration:GetTotalDuration())
+        Debug(name .. ": tiempo del aura")
     elseif db.durations[name] then
-        -- Aura secreta: la ultima duracion vista, desde el lanzamiento
+        -- Aura secreta: la duracion aprendida, desde el lanzamiento
         cooldown:SetCooldown(icon.castAt or GetTime(), db.durations[name])
         icon.hasTimer = true
+        Debug(("%s: tiempo aprendido (%.1f s)"):format(name, db.durations[name]))
     else
         icon.hasTimer = false
         cooldown:Clear()
+        Debug(name .. ": sin duracion aprendida todavia")
     end
 end
 
@@ -205,26 +264,52 @@ local function LoseAura(name)
         icon.auraInstanceID = nil
         StartTimer(name)
     else
+        Debug(name .. ": su aura ya no esta")
         HideSeal(name)
     end
 end
 
+-- Un aura con nombre de sello. Si no es el sello activo (el ultimo lanzado) es
+-- un eco o un resto del cambio: se ignora.
 local function TrackAura(aura)
-    if not IsSeal(aura.name) then return end
-    local icon = ShowSeal(aura.name, aura.icon)
-    if Readable(aura.auraInstanceID) then icon.auraInstanceID = aura.auraInstanceID end
-    HideOtherSeals(aura.name)
-    StartTimer(aura.name)
+    local name = aura.name
+    if not IsSeal(name) then return end
+    if activeSeal and name ~= activeSeal then
+        Debug(name .. ": ignorada (el sello activo es " .. activeSeal .. ")")
+        return
+    end
+    activeSeal = name
+    local icon = ShowSeal(name, aura.icon)
+    local id = aura.auraInstanceID
+    if Readable(id) then icon.auraInstanceID = id end
+    HideOtherSeals(name)
+    StartTimer(name)
 end
 
 --------------------------------------------------
 -- EVENTOS
 --------------------------------------------------
+-- Relee las auras (fuera de combate son legibles). Si hay varias con nombre de
+-- sello, gana el activo; si no se sabe cual es, la de mas duracion (un eco dura
+-- menos que el sello).
 local function FullScan()
+    local wanted = activeSeal -- HideSeal lo borra
     for i = #order, 1, -1 do HideSeal(order[i]) end
-    for _, aura in ipairs(C_UnitAuras.GetUnitAuras("player", "HELPFUL") or {}) do
-        TrackAura(aura)
+    local best, bestTotal
+    for _, aura in ipairs(List(C_UnitAuras.GetUnitAuras("player", "HELPFUL"))) do
+        local name, id = aura.name, aura.auraInstanceID
+        if IsSeal(name) and Readable(id) then
+            if name == wanted then
+                best = aura
+                break
+            end
+            local total = C_UnitAuras.GetAuraDuration("player", id):GetTotalDuration()
+            total = Readable(total) and total or 0
+            if not best or total > bestTotal then best, bestTotal = aura, total end
+        end
     end
+    activeSeal = nil
+    if best then TrackAura(best) end
     Layout()
 end
 
@@ -240,15 +325,24 @@ local function RefreshTracked()
 end
 
 local function OnUnitAura(info)
-    if not info or info.isFullUpdate then
+    if not Readable(info) then
+        Debug("UNIT_AURA sin datos legibles")
+        RefreshTracked()
+        Layout()
+        return
+    end
+    local full = info.isFullUpdate
+    if IsSecret(full) then
+        Debug("UNIT_AURA con datos secretos")
+    elseif full then
         -- En combate, con las auras secretas, releer todo borraria los sellos
         -- que no se pueden reconocer: solo se refresca lo que ya se sigue.
         if C_Secrets.ShouldAurasBeSecret() then RefreshTracked() else FullScan() end
         Layout()
         return
     end
-    for _, aura in ipairs(info.addedAuras or {}) do TrackAura(aura) end
-    for _, id in ipairs(info.removedAuraInstanceIDs or {}) do
+    for _, aura in ipairs(List(info.addedAuras)) do TrackAura(aura) end
+    for _, id in ipairs(List(info.removedAuraInstanceIDs)) do
         if Readable(id) then
             for _, name in ipairs(order) do
                 if icons[name].auraInstanceID == id then LoseAura(name) break end
@@ -262,17 +356,30 @@ end
 local function OnSealCast(spellID)
     local name = SealNameForSpell(spellID)
     if not name then return end
+    Debug(("lanzado %s (%s)"):format(name, tostring(spellID)))
+    activeSeal = name
     local icon = ShowSeal(name, C_Spell.GetSpellTexture(spellID))
     icon.castAt = GetTime()
     HideOtherSeals(name)
+    -- En combate no devuelve nada (el aura es secreta). Ojo: nada de "x and y"
+    -- aqui, que con x = nil deja un false que pasaria por un ID valido.
     local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
-    if aura and Readable(aura.auraInstanceID) then
-        icon.auraInstanceID = aura.auraInstanceID
+    local id
+    if Readable(aura) then id = aura.auraInstanceID end
+    if Readable(id) then
+        icon.auraInstanceID = id
     elseif icon.auraInstanceID and not AuraExists(icon.auraInstanceID) then
         icon.auraInstanceID = nil
     end
     StartTimer(name)
     Layout()
+    -- El aura se renueva justo despues del lanzamiento: se relee entonces
+    C_Timer.After(RECAST_REFRESH, function()
+        if icons[name] then
+            RefreshTracked()
+            Layout()
+        end
+    end)
 end
 
 --------------------------------------------------
@@ -355,7 +462,18 @@ local function CreateOptions()
 
     SLASH_SEALTIMERSFOREVER1 = "/stf"
     SlashCmdList.SEALTIMERSFOREVER = function(msg)
-        if msg and msg:lower():match("^%s*check") then return Check() end
+        local command = (msg or ""):lower():match("^%s*(%S*)")
+        if command == "check" then return Check() end
+        if command == "debug" then
+            debugMode = not debugMode
+            print("|cffd597ffSeal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
+            return
+        end
+        if command == "reset" then
+            wipe(db.durations)
+            print("|cffd597ffSeal Timers Forever|r: " .. L.RESET_DONE)
+            return
+        end
         Settings.OpenToCategory(category:GetID())
     end
 end
@@ -377,7 +495,9 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         for key, value in pairs(DEFAULTS) do
             if db[key] == nil then db[key] = value end
         end
-        db.durations = db.durations or {}
+        if db.durationsVersion ~= DURATIONS_VERSION then
+            db.durations, db.durationsVersion = {}, DURATIONS_VERSION
+        end
         BuildSealNames()
         ScanSpellBook()
         CreateAnchor()
