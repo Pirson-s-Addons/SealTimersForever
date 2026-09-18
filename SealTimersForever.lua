@@ -23,6 +23,12 @@
 -- y deja un "Eco". Si el eco lleva el nombre del sello viejo no debe pasar por
 -- el sello activo ni ensenar su duracion corta: el activo es el ultimo lanzado,
 -- y la duracion aprendida solo puede crecer. El Juicio ya no consume el sello.
+-- Twist de sellos (estilo de los WeakAuras de TBC): una barra de golpe con la
+-- zona de twist al final. PLAYER_SWING (C_SwingTimer) no es secreto, asi que
+-- funciona en combate. En Forever el twist va con el "Eco": solo Orden,
+-- Rectitud, Furia y Justicia lo dejan. El registro de combate si esta
+-- restringido, asi que el acierto del twist se deduce (cambio de sello con Eco
+-- entre dos golpes), no se lee del dano.
 -- Contrastado con Gethe/wow-ui-source, rama "forever".
 
 local _, ns = ...
@@ -34,6 +40,9 @@ local L = ns.L
 -- Forever (p. ej. Sello de Furia) entran por ese prefijo y por el libro de
 -- hechizos, sin saber su ID.
 local SEAL_SPELLS = { 21084, 21082, 20165, 20166, 20164, 20375 }
+-- Sellos SIN Eco en Forever (Cruzado, Luz y Sabiduria): el resto, incluidos
+-- los nuevos como el Sello de Furia, se pueden twistear.
+local NO_ECHO_SPELLS = { 21082, 20165, 20166 }
 
 local ICON_SIZE = 40
 local SPACING = 4
@@ -47,7 +56,12 @@ local RECAST_REFRESH = 0.2
 local DEFAULT_DURATION = 30
 -- Morado de la marca, el mismo del titulo en todos los addons de Pirson
 local BRAND = "|cffd597ff"
-local DEFAULTS = { locked = true, scale = 1, point = "CENTER", x = 0, y = -150 }
+local DEFAULTS = {
+    locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
+    swingBar = true, twistWindow = 0.4, twistSound = true,
+}
+local SWING_WIDTH, SWING_HEIGHT = 120, 10
+local MAIN_HAND = Enum.PlayerSwingType and Enum.PlayerSwingType.MainHand or 0
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
 local DURATIONS_VERSION = 1
@@ -58,6 +72,10 @@ local sealNames, sealPrefix = {}, nil
 local knownSeals = {}          -- spellID del libro de hechizos -> nombre del sello
 local icons, order, pool = {}, {}, {}  -- nombre del sello -> icono
 local activeSeal               -- nombre del ultimo sello lanzado (o elegido al releer)
+local noEcho = {}              -- nombres de los sellos sin Eco
+local swingStart, swingDuration
+local sealAtLastSwing          -- sello activo cuando cayo el ultimo golpe
+local swingBar
 local debugMode = false
 local anchor
 
@@ -104,6 +122,10 @@ local function BuildSealNames()
             count = count + 1
         end
     end
+    for _, spellID in ipairs(NO_ECHO_SPELLS) do
+        local name = C_Spell.GetSpellName(spellID)
+        if name then noEcho[name] = true end
+    end
     -- Con un solo nombre, o un prefijo tan corto que casaria con cualquier cosa,
     -- solo valen los nombres exactos.
     if count < 2 or #sealPrefix < 4 then sealPrefix = nil end
@@ -126,6 +148,10 @@ local function ScanSpellBook()
             end
         end
     end
+end
+
+local function HasEcho(name)
+    return name ~= nil and not noEcho[name]
 end
 
 local function SealNameForSpell(spellID)
@@ -153,6 +179,14 @@ local function AcquireIcon()
         icon.cooldown:SetReverse(true)
         icon.cooldown:SetDrawEdge(false)
         icon.cooldown:SetHideCountdownNumbers(false)
+        -- Brillo de "cambia de sello ya" (zona de twist)
+        icon.glow = icon:CreateTexture(nil, "OVERLAY")
+        icon.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+        icon.glow:SetBlendMode("ADD")
+        icon.glow:SetVertexColor(1, 0.82, 0)
+        icon.glow:SetPoint("CENTER")
+        icon.glow:SetSize(ICON_SIZE * 1.8, ICON_SIZE * 1.8)
+        icon.glow:Hide()
         -- Se acabo el tiempo: el sello expiro (tambien cubre retiradas que
         -- llegaron secretas y no se pudieron leer).
         icon.cooldown:SetScript("OnCooldownDone", function(self)
@@ -188,6 +222,7 @@ HideSeal = function(name)
     local icon = icons[name]
     if not icon then return end
     icon:Hide()
+    icon.glow:Hide()
     -- El temporizador se para antes de volver al pool: un OnCooldownDone tardio
     -- no debe quitar el sello que reutilice este icono.
     icon.hasTimer = false
@@ -411,12 +446,89 @@ local function OnSealCast(spellID)
 end
 
 --------------------------------------------------
+-- TEMPORIZADOR DE GOLPE Y TWIST
+--------------------------------------------------
+local function SetGlow(on, pulse)
+    for name, icon in pairs(icons) do
+        local show = on and name == activeSeal
+        icon.glow:SetShown(show)
+        if show then icon.glow:SetAlpha(pulse) end
+    end
+end
+
+-- Zona de twist: los ultimos twistWindow segundos del golpe, en dorado
+local function UpdateTwistZone()
+    if not swingDuration or swingDuration <= 0 then return end
+    local fraction = math.min(db.twistWindow / swingDuration, 1)
+    swingBar.zone:SetWidth(math.max(SWING_WIDTH * fraction, 1))
+end
+
+local function OnSwingUpdate(self)
+    if not swingStart then return end
+    local elapsed = GetTime() - swingStart
+    -- Sin golpes un rato (fin del combate, sin objetivo): se esconde
+    if elapsed > swingDuration + 1 then
+        swingStart = nil
+        SetGlow(false)
+        if db.locked then self:Hide() end
+        return
+    end
+    self:SetValue(math.min(elapsed / swingDuration, 1))
+    local inZone = elapsed >= swingDuration - db.twistWindow and elapsed <= swingDuration
+    SetGlow(inZone and HasEcho(activeSeal), 0.55 + 0.45 * math.sin(GetTime() * 14))
+end
+
+local function ApplySwingBar()
+    -- Desbloqueado se ensena aunque no haya golpes, para colocarla
+    local show = db.swingBar and (swingStart ~= nil or not db.locked)
+    swingBar:SetShown(show)
+    if not db.locked and not swingStart then swingBar:SetValue(0.7) end
+    if not show then SetGlow(false) end
+end
+
+local function CreateSwingBar()
+    swingBar = CreateFrame("StatusBar", nil, anchor)
+    swingBar:SetSize(SWING_WIDTH, SWING_HEIGHT)
+    swingBar:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -4)
+    swingBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+    swingBar:SetStatusBarColor(0.84, 0.59, 1)
+    swingBar:SetMinMaxValues(0, 1)
+    swingBar.bg = swingBar:CreateTexture(nil, "BACKGROUND")
+    swingBar.bg:SetAllPoints()
+    swingBar.bg:SetColorTexture(0, 0, 0, 0.5)
+    swingBar.zone = swingBar:CreateTexture(nil, "OVERLAY")
+    swingBar.zone:SetPoint("TOPRIGHT")
+    swingBar.zone:SetPoint("BOTTOMRIGHT")
+    swingBar.zone:SetWidth(SWING_WIDTH * 0.2)
+    swingBar.zone:SetColorTexture(1, 0.82, 0, 0.45)
+    swingBar:SetScript("OnUpdate", OnSwingUpdate)
+    swingBar:Hide()
+end
+
+local function OnSwing(duration, swingType)
+    if swingType ~= MAIN_HAND or not Readable(duration) or duration <= 0 then return end
+    -- Twist acertado: entre el golpe anterior y este se cambio desde un sello
+    -- con Eco, asi que este golpe aplica el sello anterior ademas del nuevo.
+    local twisted = sealAtLastSwing and activeSeal and activeSeal ~= sealAtLastSwing
+        and HasEcho(sealAtLastSwing)
+    if twisted then
+        Debug(("twist: %s -> %s"):format(sealAtLastSwing, activeSeal))
+        if db.twistSound then PlaySound(SOUNDKIT.MAP_PING) end
+    end
+    sealAtLastSwing = activeSeal
+    swingStart, swingDuration = GetTime(), duration
+    UpdateTwistZone()
+    ApplySwingBar()
+end
+
+--------------------------------------------------
 -- BLOQUE MOVIL
 --------------------------------------------------
 local function ApplyLock()
     anchor:EnableMouse(not db.locked)
     anchor.bg:SetShown(not db.locked)
     anchor.label:SetShown(not db.locked)
+    if swingBar then ApplySwingBar() end
 end
 
 local function ApplyScale()
@@ -487,6 +599,24 @@ local function CreateOptions()
     end)
     Settings.CreateSlider(category, scale, options, L.SIZE_TOOLTIP)
 
+    local bar = Settings.RegisterAddOnSetting(category, "SealTimersForever_SwingBar", "swingBar",
+        db, Settings.VarType.Boolean, L.SWING_BAR, DEFAULTS.swingBar)
+    bar:SetValueChangedCallback(ApplySwingBar)
+    Settings.CreateCheckbox(category, bar, L.SWING_BAR_TOOLTIP)
+
+    local window = Settings.RegisterAddOnSetting(category, "SealTimersForever_TwistWindow", "twistWindow",
+        db, Settings.VarType.Number, L.TWIST_WINDOW, DEFAULTS.twistWindow)
+    window:SetValueChangedCallback(UpdateTwistZone)
+    local windowOptions = Settings.CreateSliderOptions(0.1, 1, 0.1)
+    windowOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+        return string.format("%.1f s", value)
+    end)
+    Settings.CreateSlider(category, window, windowOptions, L.TWIST_WINDOW_TOOLTIP)
+
+    local sound = Settings.RegisterAddOnSetting(category, "SealTimersForever_TwistSound", "twistSound",
+        db, Settings.VarType.Boolean, L.TWIST_SOUND, DEFAULTS.twistSound)
+    Settings.CreateCheckbox(category, sound, L.TWIST_SOUND_TOOLTIP)
+
     Settings.RegisterAddOnCategory(category)
 
     SLASH_SEALTIMERSFOREVER1 = "/stf"
@@ -530,17 +660,24 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         BuildSealNames()
         ScanSpellBook()
         CreateAnchor()
+        CreateSwingBar()
+        ApplySwingBar()
         CreateOptions()
         self:RegisterUnitEvent("UNIT_AURA", "player")
         self:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
         self:RegisterEvent("PLAYER_REGEN_ENABLED")
         self:RegisterEvent("SPELLS_CHANGED")
+        self:RegisterEvent("PLAYER_SWING")
         FullScan()
     elseif event == "UNIT_AURA" then
         OnUnitAura(arg2)
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnSealCast(arg3)
+    elseif event == "PLAYER_SWING" then
+        OnSwing(arg1, arg2)
     elseif event == "PLAYER_REGEN_ENABLED" then
+        -- Fuera de combate el siguiente golpe no cuenta como twist
+        sealAtLastSwing = nil
         FullScan()
     elseif event == "SPELLS_CHANGED" then
         ScanSpellBook()

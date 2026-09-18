@@ -1,5 +1,5 @@
 ## Interface: 16001
-## Version: 1.00
+## Version: 1.01
 ## Author: Pirson
 ## Title: |cffd597ffSeal Timers Forever|r
 ## Notes: |cFF33CCFFShows your active paladin seals on screen with their remaining time. Movable and resizable.|r
