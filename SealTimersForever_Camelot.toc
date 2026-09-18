@@ -2,14 +2,85 @@
 ## Version: 1.01
 ## Author: Pirson
 ## Title: |cffd597ffSeal Timers Forever|r
-## Notes: |cFF33CCFFShows your active paladin seals on screen with their remaining time. Movable and resizable.|r
-## Notes-esES: |cFF33CCFFMuestra en pantalla tus sellos de paladín activos con el tiempo que les queda. Se puede mover y cambiar de tamaño.|r
-## Notes-esMX: |cFF33CCFFMuestra en pantalla tus sellos de paladín activos con el tiempo que les queda. Se puede mover y cambiar de tamaño.|r
 
 # https://warcraft.wiki.gg/wiki/Addon_Categories
 ## Category: Buffs & Debuffs
+## Category-deDE: Stärkungs- & Schwächungszauber
 ## Category-esES: Beneficios y perjuicios
 ## Category-esMX: Beneficios y perjuicios
+## Category-frFR: Améliorations et affaiblissements
+## Category-itIT: Benefici e penalità
+## Category-koKR: 강화 및 약화 효과
+## Category-ptBR: Bônus e penalidades
+## Category-ruRU: Положительные и отрицательные эффекты
+## Category-zhCN: 增益和减益
+## Category-zhTW: 增益與減益
+## Category-plPL: Wzmocnienia i osłabienia
+## Category-svSE: Förstärkningar och försvagningar
+## Category-noNO: Forsterkninger og svekkelser
+## Category-csCZ: Posílení a oslabení
+## Category-nlNL: Buffs en debuffs
+## Category-roRO: Întăriri și slăbiri
+## Category-huHU: Erősítések és gyengítések
+## Category-elGR: Ενισχύσεις και εξασθενήσεις
+## Category-ukUA: Посилення й послаблення
+## Category-daDK: Forstærkninger og svækkelser
+## Category-fiFI: Vahvistukset ja heikennykset
+## Category-skSK: Posilnenia a oslabenia
+## Category-bgBG: Подсилвания и отслабвания
+## Category-hrHR: Pojačanja i slabljenja
+## Category-srRS: Pojačanja i slabljenja
+## Category-slSI: Okrepitve in oslabitve
+## Category-ltLT: Sustiprinimai ir susilpninimai
+## Category-lvLV: Pastiprinājumi un vājinājumi
+## Category-etEE: Tugevdused ja nõrgendused
+## Category-idID: Buff dan debuff
+## Category-msMY: Buff dan debuff
+## Category-faIR: تقویت‌ها و تضعیف‌ها
+## Category-heIL: חיזוקים והחלשות
+## Category-bnBD: বাফ ও ডিবাফ
+## Category-urPK: بف اور ڈی بف
+## Category-taIN: பஃப்கள் மற்றும் டீபஃப்கள்
+## Category-teIN: బఫ్‌లు మరియు డీబఫ్‌లు
+
+## Notes: |cFF33CCFFYour active paladin seal with its remaining time, and a swing timer for seal twisting. Movable and resizable.|r
+## Notes-deDE: |cFF33CCFFDein aktives Paladin-Siegel mit Restzeit und ein Schlagtimer für Siegel-Twisting. Verschiebbar und skalierbar.|r
+## Notes-esES: |cFF33CCFFTu sello de paladín activo con su tiempo restante y un temporizador de golpe para el seal twisting. Se puede mover y cambiar de tamaño.|r
+## Notes-esMX: |cFF33CCFFTu sello de paladín activo con su tiempo restante y un temporizador de golpe para el seal twisting. Se puede mover y cambiar de tamaño.|r
+## Notes-frFR: |cFF33CCFFVotre sceau de paladin actif avec son temps restant et un minuteur de frappe pour le twist de sceaux. Déplaçable et redimensionnable.|r
+## Notes-itIT: |cFF33CCFFIl tuo sigillo da paladino attivo con il tempo rimanente e un timer del colpo per il twist dei sigilli. Spostabile e ridimensionabile.|r
+## Notes-koKR: |cFF33CCFF활성화된 성기사 문장의 남은 시간과 문장 교체용 공격 타이머를 표시합니다. 이동 및 크기 조절 가능.|r
+## Notes-ptBR: |cFF33CCFFSeu selo de paladino ativo com o tempo restante e um temporizador de golpe para troca de selos. Pode ser movido e redimensionado.|r
+## Notes-ruRU: |cFF33CCFFАктивная печать паладина с оставшимся временем и таймер удара для твиста печатей. Можно перемещать и менять размер.|r
+## Notes-zhCN: |cFF33CCFF显示当前圣骑士圣印的剩余时间，并提供用于圣印切换的攻击计时条。可移动并调整大小。|r
+## Notes-zhTW: |cFF33CCFF顯示目前聖騎士聖印的剩餘時間，並提供用於聖印切換的攻擊計時條。可移動並調整大小。|r
+## Notes-plPL: |cFF33CCFFTwoja aktywna pieczęć paladyna z pozostałym czasem i licznik ataku do przełączania pieczęci. Można przesuwać i skalować.|r
+## Notes-svSE: |cFF33CCFFDitt aktiva paladinsigill med återstående tid och en slagtimer för sigillbyte. Flyttbar och skalbar.|r
+## Notes-noNO: |cFF33CCFFDitt aktive paladinsegl med gjenværende tid og en slagtimer for seglbytte. Kan flyttes og skaleres.|r
+## Notes-csCZ: |cFF33CCFFTvoje aktivní pečeť paladina se zbývajícím časem a časovač úderu pro střídání pečetí. Lze přesouvat a měnit velikost.|r
+## Notes-nlNL: |cFF33CCFFJe actieve paladin-zegel met resterende tijd en een slagtimer voor zegelwisselen. Verplaatsbaar en schaalbaar.|r
+## Notes-roRO: |cFF33CCFFSigiliul tău de paladin activ cu timpul rămas și un cronometru de lovitură pentru schimbarea sigiliilor. Poate fi mutat și redimensionat.|r
+## Notes-huHU: |cFF33CCFFAz aktív paladinpecséted a hátralévő idővel, és ütésidőzítő a pecsétváltáshoz. Mozgatható és átméretezhető.|r
+## Notes-elGR: |cFF33CCFFΗ ενεργή σφραγίδα παλαδίνου με τον χρόνο που απομένει και χρονόμετρο χτυπήματος για εναλλαγή σφραγίδων. Μετακινείται και αλλάζει μέγεθος.|r
+## Notes-ukUA: |cFF33CCFFАктивна печатка паладина із залишком часу та таймер удару для твісту печаток. Можна переміщувати й змінювати розмір.|r
+## Notes-daDK: |cFF33CCFFDit aktive paladinsegl med resterende tid og en slagtimer til seglskift. Kan flyttes og skaleres.|r
+## Notes-fiFI: |cFF33CCFFAktiivinen paladiinin sinettisi jäljellä olevan ajan kanssa ja lyöntiajastin sinettien vaihtoon. Siirrettävä ja skaalattava.|r
+## Notes-skSK: |cFF33CCFFTvoja aktívna pečať paladina so zostávajúcim časom a časovač úderu na striedanie pečatí. Dá sa presúvať a meniť veľkosť.|r
+## Notes-bgBG: |cFF33CCFFАктивният ти печат на паладин с оставащото време и таймер за удар за смяна на печати. Може да се мести и преоразмерява.|r
+## Notes-hrHR: |cFF33CCFFTvoj aktivni paladinski pečat s preostalim vremenom i mjerač udarca za izmjenu pečata. Može se pomicati i mijenjati veličina.|r
+## Notes-srRS: |cFF33CCFFTvoj aktivni paladinski pečat sa preostalim vremenom i merač udarca za smenu pečata. Može se pomerati i menjati veličina.|r
+## Notes-slSI: |cFF33CCFFTvoj aktivni paladinski pečat s preostalim časom in merilnik udarca za menjavo pečatov. Premakljiv in nastavljive velikosti.|r
+## Notes-ltLT: |cFF33CCFFTavo aktyvus paladino antspaudas su likusiu laiku ir smūgio laikmatis antspaudų keitimui. Galima perkelti ir keisti dydį.|r
+## Notes-lvLV: |cFF33CCFFTavs aktīvais paladīna zīmogs ar atlikušo laiku un sitiena taimeris zīmogu mainīšanai. Pārvietojams un mērogojams.|r
+## Notes-etEE: |cFF33CCFFSinu aktiivne paladiini pitser koos järelejäänud ajaga ja löögitaimer pitserite vahetamiseks. Liigutatav ja muudetava suurusega.|r
+## Notes-idID: |cFF33CCFFSegel paladin aktifmu dengan sisa waktunya dan pengatur waktu serangan untuk menukar segel. Bisa dipindah dan diubah ukurannya.|r
+## Notes-msMY: |cFF33CCFFMeterai paladin aktif anda dengan baki masa dan pemasa serangan untuk menukar meterai. Boleh dialih dan diubah saiz.|r
+## Notes-faIR: |cFF33CCFFمهر پالادین فعال شما با زمان باقی‌مانده و زمان‌سنج ضربه برای جابه‌جایی مهرها. قابل جابه‌جایی و تغییر اندازه.|r
+## Notes-heIL: |cFF33CCFFהחותם הפעיל של הפלאדין שלך עם הזמן שנותר וטיימר מכות להחלפת חותמות. ניתן להזזה ולשינוי גודל.|r
+## Notes-bnBD: |cFF33CCFFআপনার সক্রিয় প্যালাডিন সিল ও তার বাকি সময়, সাথে সিল বদলের জন্য আঘাত টাইমার। সরানো ও আকার বদলানো যায়।|r
+## Notes-urPK: |cFF33CCFFآپ کی فعال پیلاڈن مہر باقی وقت کے ساتھ، اور مہریں بدلنے کے لیے ضرب ٹائمر۔ منتقل اور چھوٹا بڑا کیا جا سکتا ہے۔|r
+## Notes-taIN: |cFF33CCFFஉங்கள் செயலில் உள்ள பலடின் முத்திரை மீதமுள்ள நேரத்துடன், முத்திரை மாற்றத்திற்கான தாக்குதல் டைமர். நகர்த்தலாம், அளவை மாற்றலாம்.|r
+## Notes-teIN: |cFF33CCFFమీ యాక్టివ్ పాలడిన్ ముద్ర మిగిలిన సమయంతో, ముద్రల మార్పుకు దాడి టైమర్. తరలించవచ్చు, పరిమాణం మార్చవచ్చు.|r
 
 ## SavedVariables: SealTimersForeverDB
 

@@ -58,7 +58,7 @@ local DEFAULT_DURATION = 30
 local BRAND = "|cffd597ff"
 local DEFAULTS = {
     locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
-    swingBar = true, twistWindow = 0.4, twistSound = true,
+    twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
 }
 -- Barra de golpe como la del WeakAura de Kaedin: encima del sello, amarilla
 -- sobre azul oscuro, con el tiempo que queda en el centro y dos lineas.
@@ -484,25 +484,30 @@ local function UpdateTicks()
     PlaceTick(swingBar.twistTick, db.twistWindow)
 end
 
-local function OnSwingUpdate(self)
+-- El reloj del golpe va en el bloque (siempre visible), no en la barra: asi el
+-- parpadeo funciona aunque la barra este desactivada.
+local function OnSwingUpdate()
     if not swingStart then return end
     local elapsed = GetTime() - swingStart
     -- Sin golpes un rato (fin del combate, sin objetivo): se esconde
     if elapsed > swingDuration + 1 then
         swingStart = nil
         SetGlow(false)
-        if db.locked then self:Hide() end
+        if db.locked then swingBar:Hide() end
         return
     end
-    self:SetValue(math.min(elapsed / swingDuration, 1))
-    self.text:SetFormattedText("%.1f", math.max(swingDuration - elapsed, 0))
+    if swingBar:IsShown() then
+        swingBar:SetValue(math.min(elapsed / swingDuration, 1))
+        swingBar.text:SetFormattedText("%.1f", math.max(swingDuration - elapsed, 0))
+    end
     local inWindow = elapsed >= swingDuration - db.twistWindow and elapsed <= swingDuration
-    SetGlow(inWindow and HasEcho(activeSeal), 0.55 + 0.45 * math.sin(GetTime() * 14))
+    SetGlow(db.twistEnabled and db.twistGlow and inWindow and HasEcho(activeSeal),
+        0.55 + 0.45 * math.sin(GetTime() * 14))
 end
 
 local function ApplySwingBar()
     -- Desbloqueado se ensena aunque no haya golpes, para colocarla
-    local show = db.swingBar and (swingStart ~= nil or not db.locked)
+    local show = db.twistEnabled and db.swingBar and (swingStart ~= nil or not db.locked)
     swingBar:SetShown(show)
     if not db.locked and not swingStart then
         swingDuration = swingDuration or 3.5
@@ -510,7 +515,7 @@ local function ApplySwingBar()
         swingBar:SetValue(0.7)
         swingBar.text:SetText("1.0")
     end
-    if not show then SetGlow(false) end
+    if not (db.twistEnabled and db.twistGlow) then SetGlow(false) end
 end
 
 local function Tick(r, g, b)
@@ -534,8 +539,8 @@ local function CreateSwingBar()
     swingBar.twistTick = Tick(0.1, 1, 0.1)
     swingBar.text = swingBar:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
     swingBar.text:SetPoint("CENTER")
-    swingBar:SetScript("OnUpdate", OnSwingUpdate)
     swingBar:Hide()
+    anchor:SetScript("OnUpdate", OnSwingUpdate)
 end
 
 local function OnSwing(duration, swingType)
@@ -546,7 +551,7 @@ local function OnSwing(duration, swingType)
         and HasEcho(sealAtLastSwing)
     if twisted then
         Debug(("twist: %s -> %s"):format(sealAtLastSwing, activeSeal))
-        if db.twistSound then PlaySound(SOUNDKIT.MAP_PING) end
+        if db.twistEnabled and db.twistSound then PlaySound(SOUNDKIT.MAP_PING) end
     end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
@@ -616,39 +621,42 @@ end
 
 local function CreateOptions()
     -- En morado tambien en Opciones > AddOns, como en la lista de addons
-    local category = Settings.RegisterVerticalLayoutCategory(BRAND .. "Seal Timers Forever|r")
+    local category, layout = Settings.RegisterVerticalLayoutCategory(BRAND .. "Seal Timers Forever|r")
 
-    local lock = Settings.RegisterAddOnSetting(category, "SealTimersForever_Locked", "locked",
-        db, Settings.VarType.Boolean, L.LOCK, DEFAULTS.locked)
-    lock:SetValueChangedCallback(ApplyLock)
-    Settings.CreateCheckbox(category, lock, L.LOCK_TOOLTIP)
+    local function Checkbox(key, label, tooltip, onChange)
+        local setting = Settings.RegisterAddOnSetting(category, "SealTimersForever_" .. key, key,
+            db, Settings.VarType.Boolean, label, DEFAULTS[key])
+        if onChange then setting:SetValueChangedCallback(onChange) end
+        return Settings.CreateCheckbox(category, setting, tooltip)
+    end
 
-    local scale = Settings.RegisterAddOnSetting(category, "SealTimersForever_Scale", "scale",
-        db, Settings.VarType.Number, L.SIZE, DEFAULTS.scale)
-    scale:SetValueChangedCallback(ApplyScale)
-    local options = Settings.CreateSliderOptions(0.5, 3, 0.1)
-    options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+    local function Slider(key, label, tooltip, min, max, step, format, onChange)
+        local setting = Settings.RegisterAddOnSetting(category, "SealTimersForever_" .. key, key,
+            db, Settings.VarType.Number, label, DEFAULTS[key])
+        setting:SetValueChangedCallback(onChange)
+        local options = Settings.CreateSliderOptions(min, max, step)
+        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, format)
+        return Settings.CreateSlider(category, setting, options, tooltip)
+    end
+
+    -- General: posicion y tamano del bloque
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.GENERAL_HEADER))
+    Checkbox("locked", L.LOCK, L.LOCK_TOOLTIP, ApplyLock)
+    Slider("scale", L.SIZE, L.SIZE_TOOLTIP, 0.5, 3, 0.1, function(value)
         return string.format("%d%%", math.floor(value * 100 + 0.5))
-    end)
-    Settings.CreateSlider(category, scale, options, L.SIZE_TOOLTIP)
+    end, ApplyScale)
 
-    local bar = Settings.RegisterAddOnSetting(category, "SealTimersForever_SwingBar", "swingBar",
-        db, Settings.VarType.Boolean, L.SWING_BAR, DEFAULTS.swingBar)
-    bar:SetValueChangedCallback(ApplySwingBar)
-    Settings.CreateCheckbox(category, bar, L.SWING_BAR_TOOLTIP)
-
-    local window = Settings.RegisterAddOnSetting(category, "SealTimersForever_TwistWindow", "twistWindow",
-        db, Settings.VarType.Number, L.TWIST_WINDOW, DEFAULTS.twistWindow)
-    window:SetValueChangedCallback(UpdateTicks)
-    local windowOptions = Settings.CreateSliderOptions(0.1, 1, 0.1)
-    windowOptions:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, function(value)
+    -- Seal twisting: un interruptor general y, colgando de el, sus opciones
+    -- (se ven desactivadas mientras el interruptor esta apagado)
+    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.TWIST_HEADER))
+    local twist = Checkbox("twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, ApplySwingBar)
+    local function TwistOn() return db.twistEnabled end
+    Checkbox("swingBar", L.SWING_BAR, L.SWING_BAR_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
+    Checkbox("twistGlow", L.TWIST_GLOW, L.TWIST_GLOW_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
+    Slider("twistWindow", L.TWIST_WINDOW, L.TWIST_WINDOW_TOOLTIP, 0.1, 1, 0.1, function(value)
         return string.format("%.1f s", value)
-    end)
-    Settings.CreateSlider(category, window, windowOptions, L.TWIST_WINDOW_TOOLTIP)
-
-    local sound = Settings.RegisterAddOnSetting(category, "SealTimersForever_TwistSound", "twistSound",
-        db, Settings.VarType.Boolean, L.TWIST_SOUND, DEFAULTS.twistSound)
-    Settings.CreateCheckbox(category, sound, L.TWIST_SOUND_TOOLTIP)
+    end, UpdateTicks):SetParentInitializer(twist, TwistOn)
+    Checkbox("twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP):SetParentInitializer(twist, TwistOn)
 
     Settings.RegisterAddOnCategory(category)
 
