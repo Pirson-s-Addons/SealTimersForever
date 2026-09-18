@@ -449,6 +449,18 @@ local function OnSealCast(spellID)
     local icon = ShowSeal(name, C_Spell.GetSpellTexture(spellID))
     icon.castAt = GetTime()
     HideOtherSeals(name)
+    -- El contador se reinicia ANTES de tocar ninguna aura: en combate el aura
+    -- vieja puede ser secreta o haber desaparecido, y si consultarla falla
+    -- (error oculto) el relanzamiento no reiniciaria nada.
+    StartTimer(name)
+    Layout()
+    -- El aura se renueva justo despues del lanzamiento: se relee entonces
+    C_Timer.After(RECAST_REFRESH, function()
+        if icons[name] then
+            RefreshTracked()
+            Layout()
+        end
+    end)
     -- En combate no devuelve nada (el aura es secreta). Ojo: nada de "x and y"
     -- aqui, que con x = nil deja un false que pasaria por un ID valido.
     local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellID)
@@ -459,15 +471,6 @@ local function OnSealCast(spellID)
     elseif icon.auraInstanceID and not AuraExists(icon.auraInstanceID) then
         icon.auraInstanceID = nil
     end
-    StartTimer(name)
-    Layout()
-    -- El aura se renueva justo despues del lanzamiento: se relee entonces
-    C_Timer.After(RECAST_REFRESH, function()
-        if icons[name] then
-            RefreshTracked()
-            Layout()
-        end
-    end)
 end
 
 --------------------------------------------------
