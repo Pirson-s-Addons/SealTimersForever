@@ -1,0 +1,20 @@
+## Interface: 16001
+## Version: 1.00
+## Author: Pirson
+## Title: |cffd597ffSeal Timers Forever|r
+## Notes: |cFF33CCFFShows your active paladin seals on screen with their remaining time. Movable and resizable.|r
+## Notes-esES: |cFF33CCFFMuestra en pantalla tus sellos de paladín activos con el tiempo que les queda. Se puede mover y cambiar de tamaño.|r
+## Notes-esMX: |cFF33CCFFMuestra en pantalla tus sellos de paladín activos con el tiempo que les queda. Se puede mover y cambiar de tamaño.|r
+
+# https://warcraft.wiki.gg/wiki/Addon_Categories
+## Category: Buffs & Debuffs
+## Category-esES: Beneficios y perjuicios
+## Category-esMX: Beneficios y perjuicios
+
+## SavedVariables: SealTimersForeverDB
+
+# Solo WoW Forever: el sufijo _Camelot es el game type que busca ese cliente, y
+# sin un .toc generico ningun otro cliente lista el addon.
+
+Locales.lua
+SealTimersForever.lua
