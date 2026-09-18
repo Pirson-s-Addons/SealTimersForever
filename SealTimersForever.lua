@@ -59,6 +59,8 @@ local BRAND = "|cffd597ff"
 local DEFAULTS = {
     locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
     twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
+    -- Icono en cada golpe: donde lo tenia el WeakAura (encima del objetivo)
+    hitIcon = true, hitPoint = "CENTER", hitX = 60, hitY = 175,
 }
 -- Barra de golpe como la del WeakAura de Kaedin: encima del sello, amarilla
 -- sobre azul oscuro, con el tiempo que queda en el centro y dos lineas.
@@ -67,6 +69,9 @@ local SWING_WIDTH, SWING_HEIGHT = 200, 14
 -- usar una habilidad con GCD sin pisar la ventana de twist.
 -- ponytail: fijo en 1,5 s; si Forever aplica celeridad al GCD, habria que leerlo.
 local GCD = 1.5
+-- Cuanto se ve el icono de cada golpe (como el WeakAura: 1,5 s)
+local HIT_DURATION = 1.5
+local HIT_SIZE = 36
 local MAIN_HAND = Enum.PlayerSwingType and Enum.PlayerSwingType.MainHand or 0
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
@@ -82,6 +87,8 @@ local noEcho = {}              -- nombres de los sellos sin Eco
 local swingStart, swingDuration
 local sealAtLastSwing          -- sello activo cuando cayo el ultimo golpe
 local swingBar
+local hitAnchor, hitIcons = nil, {}
+local sealTextures = {}        -- nombre del sello -> ultima textura vista
 local debugMode = false
 local anchor
 
@@ -224,7 +231,10 @@ local function ShowSeal(name, texture)
         icons[name] = icon
         order[#order + 1] = name
     end
-    if Readable(texture) then icon.texture:SetTexture(texture) end
+    if Readable(texture) then
+        icon.texture:SetTexture(texture)
+        sealTextures[name] = texture
+    end
     return icon
 end
 
@@ -273,9 +283,12 @@ local function SealDuration(name)
 end
 
 -- Si el aura es legible, aprende de paso su duracion real
+-- Solo fuera de combate: en combate el aura puede ser secreta o haber cambiado
+-- de ID tras relanzar, y consultarla podria fallar.
 local function LearnFromAura(name, id)
+    if C_Secrets.ShouldAurasBeSecret() or not AuraExists(id) then return end
     local duration = C_UnitAuras.GetAuraDuration("player", id)
-    if duration:HasSecretValues() or duration:IsZero() then return end
+    if not duration or duration:HasSecretValues() or duration:IsZero() then return end
     Learn(name, duration:GetTotalDuration())
 end
 
@@ -286,10 +299,12 @@ local function StartTimer(name)
     if icon.castAt then
         -- Lanzado por el jugador: su duracion desde el lanzamiento. Relanzar un
         -- sello lo renueva entero, asi que es exacto y no depende de nada secreto.
-        if icon.auraInstanceID then LearnFromAura(name, icon.auraInstanceID) end
+        -- El temporizador va PRIMERO: nada de lo que venga despues puede
+        -- impedir que un relanzamiento lo reinicie.
         cooldown:SetCooldown(icon.castAt, SealDuration(name))
         icon.hasTimer = true
         Debug(("%s: %.1f s desde el lanzamiento"):format(name, SealDuration(name)))
+        if icon.auraInstanceID then LearnFromAura(name, icon.auraInstanceID) end
     elseif icon.auraInstanceID then
         -- Sin lanzamiento visto (p. ej. tras /reload): el tiempo del aura
         local duration = C_UnitAuras.GetAuraDuration("player", icon.auraInstanceID)
@@ -543,6 +558,71 @@ local function CreateSwingBar()
     anchor:SetScript("OnUpdate", OnSwingUpdate)
 end
 
+-- Iconos de golpe: el sello activo y, si el golpe aplica un twist, tambien el
+-- anterior (el Eco), con HIT_DURATION s de cuenta atras.
+local function CreateHitIcon(index)
+    local hit = CreateFrame("Frame", nil, hitAnchor)
+    hit:SetSize(HIT_SIZE, HIT_SIZE)
+    hit:SetPoint("LEFT", hitAnchor, "LEFT", (index - 1) * (HIT_SIZE + SPACING), 0)
+    hit.texture = hit:CreateTexture(nil, "ARTWORK")
+    hit.texture:SetAllPoints()
+    hit.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    hit.cooldown = CreateFrame("Cooldown", nil, hit, "CooldownFrameTemplate")
+    hit.cooldown:SetAllPoints()
+    hit.cooldown:SetReverse(true)
+    hit.cooldown:SetDrawEdge(false)
+    hit.cooldown:SetHideCountdownNumbers(false)
+    local countdown = hit.cooldown:GetCountdownFontString()
+    countdown:SetFont(STANDARD_TEXT_FONT, 16, "OUTLINE")
+    countdown:SetTextColor(1, 0.82, 0)
+    hit.cooldown:SetScript("OnCooldownDone", function(self) self:GetParent():Hide() end)
+    hit:Hide()
+    return hit
+end
+
+local function ShowHits(names)
+    for i = 1, #hitIcons do hitIcons[i]:Hide() end
+    for i, name in ipairs(names) do
+        local hit = hitIcons[i]
+        hit.texture:SetTexture(sealTextures[name] or "Interface\\Icons\\INV_Misc_QuestionMark")
+        hit.cooldown:SetCooldown(GetTime(), HIT_DURATION)
+        hit:Show()
+    end
+end
+
+local function ApplyHitAnchor()
+    local unlocked = not db.locked and db.twistEnabled and db.hitIcon
+    hitAnchor:EnableMouse(unlocked)
+    hitAnchor.bg:SetShown(unlocked)
+    hitAnchor.label:SetShown(unlocked)
+    if not (db.twistEnabled and db.hitIcon) then
+        for i = 1, #hitIcons do hitIcons[i]:Hide() end
+    end
+end
+
+local function CreateHitAnchor()
+    hitAnchor = CreateFrame("Frame", "SealTimersForeverHitAnchor", UIParent)
+    hitAnchor:SetSize(HIT_SIZE, HIT_SIZE)
+    hitAnchor:SetPoint(db.hitPoint, UIParent, db.hitPoint, db.hitX, db.hitY)
+    hitAnchor:SetMovable(true)
+    hitAnchor:SetClampedToScreen(true)
+    hitAnchor:RegisterForDrag("LeftButton")
+    hitAnchor:SetScript("OnDragStart", hitAnchor.StartMoving)
+    hitAnchor:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, _, x, y = self:GetPoint()
+        db.hitPoint, db.hitX, db.hitY = point, x, y
+    end)
+    hitAnchor.bg = hitAnchor:CreateTexture(nil, "BACKGROUND")
+    hitAnchor.bg:SetAllPoints()
+    hitAnchor.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
+    hitAnchor.label = hitAnchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    hitAnchor.label:SetPoint("BOTTOM", hitAnchor, "TOP", 0, 2)
+    hitAnchor.label:SetText(BRAND .. L.HIT_ICON .. "|r - " .. L.DRAG_HINT)
+    hitIcons[1], hitIcons[2] = CreateHitIcon(1), CreateHitIcon(2)
+    ApplyHitAnchor()
+end
+
 local function OnSwing(duration, swingType)
     if swingType ~= MAIN_HAND or not Readable(duration) or duration <= 0 then return end
     -- Twist acertado: entre el golpe anterior y este se cambio desde un sello
@@ -552,6 +632,9 @@ local function OnSwing(duration, swingType)
     if twisted then
         Debug(("twist: %s -> %s"):format(sealAtLastSwing, activeSeal))
         if db.twistEnabled and db.twistSound then PlaySound(SOUNDKIT.MAP_PING) end
+    end
+    if db.twistEnabled and db.hitIcon and activeSeal then
+        ShowHits(twisted and { activeSeal, sealAtLastSwing } or { activeSeal })
     end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
@@ -567,10 +650,12 @@ local function ApplyLock()
     anchor.bg:SetShown(not db.locked)
     anchor.label:SetShown(not db.locked)
     if swingBar then ApplySwingBar() end
+    if hitAnchor then ApplyHitAnchor() end
 end
 
 local function ApplyScale()
     anchor:SetScale(db.scale)
+    if hitAnchor then hitAnchor:SetScale(db.scale) end
 end
 
 local function CreateAnchor()
@@ -649,7 +734,10 @@ local function CreateOptions()
     -- Seal twisting: un interruptor general y, colgando de el, sus opciones
     -- (se ven desactivadas mientras el interruptor esta apagado)
     layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.TWIST_HEADER))
-    local twist = Checkbox("twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, ApplySwingBar)
+    local twist = Checkbox("twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, function()
+        ApplySwingBar()
+        ApplyHitAnchor()
+    end)
     local function TwistOn() return db.twistEnabled end
     Checkbox("swingBar", L.SWING_BAR, L.SWING_BAR_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
     Checkbox("twistGlow", L.TWIST_GLOW, L.TWIST_GLOW_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
@@ -657,6 +745,7 @@ local function CreateOptions()
         return string.format("%.1f s", value)
     end, UpdateTicks):SetParentInitializer(twist, TwistOn)
     Checkbox("twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP):SetParentInitializer(twist, TwistOn)
+    Checkbox("hitIcon", L.HIT_ICON, L.HIT_ICON_TOOLTIP, ApplyHitAnchor):SetParentInitializer(twist, TwistOn)
 
     Settings.RegisterAddOnCategory(category)
 
@@ -703,6 +792,8 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         CreateAnchor()
         CreateSwingBar()
         ApplySwingBar()
+        CreateHitAnchor()
+        ApplyScale()
         CreateOptions()
         self:RegisterUnitEvent("UNIT_AURA", "player")
         self:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
