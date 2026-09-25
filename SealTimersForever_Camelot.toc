@@ -1,6 +1,7 @@
 ## Interface: 16001
 ## Version: 1.01
 ## Author: Pirson
+## IconTexture: Interface\AddOns\SealTimersForever\img\logo_stf
 ## Title: |cffd597ffSeal Timers Forever|r
 
 # https://warcraft.wiki.gg/wiki/Addon_Categories
@@ -42,6 +43,12 @@
 ## Category-urPK: بف اور ڈی بف
 ## Category-taIN: பஃப்கள் மற்றும் டீபஃப்கள்
 ## Category-teIN: బఫ్‌లు మరియు డీబఫ్‌లు
+## Category-trTR: Güçlendirmeler ve zayıflatmalar
+## Category-jaJP: バフとデバフ
+## Category-arSA: التعزيزات والإضعافات
+## Category-hiIN: बफ़ और डीबफ़
+## Category-thTH: บัฟและดีบัฟ
+## Category-viVN: Hiệu ứng tốt và xấu
 
 ## Notes: |cFF33CCFFYour active paladin seal with its remaining time, and a swing timer for seal twisting. Movable and resizable.|r
 ## Notes-deDE: |cFF33CCFFDein aktives Paladin-Siegel mit Restzeit und ein Schlagtimer für Siegel-Twisting. Verschiebbar und skalierbar.|r
@@ -81,11 +88,38 @@
 ## Notes-urPK: |cFF33CCFFآپ کی فعال پیلاڈن مہر باقی وقت کے ساتھ، اور مہریں بدلنے کے لیے ضرب ٹائمر۔ منتقل اور چھوٹا بڑا کیا جا سکتا ہے۔|r
 ## Notes-taIN: |cFF33CCFFஉங்கள் செயலில் உள்ள பலடின் முத்திரை மீதமுள்ள நேரத்துடன், முத்திரை மாற்றத்திற்கான தாக்குதல் டைமர். நகர்த்தலாம், அளவை மாற்றலாம்.|r
 ## Notes-teIN: |cFF33CCFFమీ యాక్టివ్ పాలడిన్ ముద్ర మిగిలిన సమయంతో, ముద్రల మార్పుకు దాడి టైమర్. తరలించవచ్చు, పరిమాణం మార్చవచ్చు.|r
+## Notes-trTR: |cFF33CCFFAktif paladin mührün ve kalan süresi, ayrıca seal twisting için bir vuruş zamanlayıcısı. Taşınabilir ve boyutlandırılabilir.|r
+## Notes-jaJP: |cFF33CCFF有効なパラディンのシールと残り時間、そしてシールツイスト用のスイングタイマー。移動・サイズ変更可能。|r
+## Notes-arSA: |cFF33CCFFختم الفارس المقدس النشط مع وقته المتبقي، ومؤقت ضربة من أجل seal twisting. قابل للتحريك وتغيير الحجم.|r
+## Notes-hiIN: |cFF33CCFFआपकी सक्रिय पैलाडिन मुहर और उसका बचा समय, साथ ही seal twisting के लिए स्विंग टाइमर। हिलाया और आकार बदला जा सकता है।|r
+## Notes-thTH: |cFF33CCFFตราประทับพาลาดินที่ใช้งานอยู่พร้อมเวลาที่เหลือ และตัวจับเวลาการโจมตีสำหรับ seal twisting ย้ายและปรับขนาดได้|r
+## Notes-viVN: |cFF33CCFFẤn hiệp sĩ đang hoạt động cùng thời gian còn lại, và bộ đếm đòn đánh cho seal twisting. Có thể di chuyển và đổi kích thước.|r
 
 ## SavedVariables: SealTimersForeverDB
 
 # Solo WoW Forever: el sufijo _Camelot es el game type que busca ese cliente, y
 # sin un .toc generico ningun otro cliente lista el addon.
 
-Locales.lua
-SealTimersForever.lua
+Locales/enUS.lua
+Locales/esES.lua
+Locales/deDE.lua
+Locales/frFR.lua
+Locales/itIT.lua
+Locales/ptBR.lua
+Locales/ruRU.lua
+Locales/koKR.lua
+Locales/zhCN.lua
+Locales/zhTW.lua
+Locales/plPL.lua
+Locales/svSE.lua
+Locales/noNO.lua
+Locales/trTR.lua
+Locales/jaJP.lua
+Locales/arSA.lua
+Locales/hiIN.lua
+Locales/thTH.lua
+Locales/viVN.lua
+Locales/csCZ.lua
+UI/About.lua
+UI/Options.lua
+Core/SealTimersForever.lua

@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- ESPAÑOL (esES / esMX)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "esES" and locale ~= "esMX" then return end
+local L = ns.L
+
+L["TITLE"] = "Temporizador de sellos"
+L["DRAG_HINT"] = "Arrastra para mover"
+L["LOCK"] = "Bloquear posición"
+L["LOCK_TOOLTIP"] = "Desbloquéalo para arrastrar los iconos de los sellos a cualquier parte de la pantalla."
+L["SIZE"] = "Tamaño"
+L["SIZE_TOOLTIP"] = "Tamaño de los iconos de los sellos."
+L["GENERAL_HEADER"] = "General"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Activar seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Temporizador de golpe, parpadeo del sello y sonido de twist. Desactívalo para quedarte solo con el tiempo del sello."
+L["TWIST_GLOW"] = "Parpadeo del sello"
+L["TWIST_GLOW_TOOLTIP"] = "El icono del sello parpadea dentro de la ventana de twist si el sello deja Eco."
+L["SWING_BAR"] = "Temporizador de golpe"
+L["SWING_BAR_TOOLTIP"] = "Barra del golpe de la mano derecha encima del sello, con el tiempo que queda para el siguiente golpe. Línea roja: último momento para una habilidad con tiempo global. Línea verde: empieza la ventana de twist."
+L["TWIST_WINDOW"] = "Ventana de twist"
+L["TWIST_WINDOW_TOOLTIP"] = "Segundos antes de cada golpe en los que el sello brilla (línea verde): cambia de sello entonces para hacer twist (solo sellos que dejan Eco: Orden, Rectitud, Furia, Justicia)."
+L["TWIST_SOUND"] = "Sonido de twist"
+L["TWIST_SOUND_TOOLTIP"] = "Suena cuando un golpe cae después de cambiar desde un sello que deja Eco."
+L["HIT_ICON"] = "Icono en cada golpe"
+L["HIT_ICON_TOOLTIP"] = "Muestra el sello activo encima del objetivo durante 1,5 s en cada golpe cuerpo a cuerpo, y también el sello anterior (su Eco) cuando el golpe hace twist. Desbloquea la posición para moverlo."
+L["CHECK_HEADER"] = "Tus sellos en combate:"
+L["CHECK_OPEN"] = "%s: se lee, tiempo exacto"
+L["CHECK_SECRET"] = "%s: aura secreta, se sigue por su lanzamiento con la última duración vista (%s)"
+L["CHECK_CAST_SECRET"] = "%s: hasta su lanzamiento es secreto, no se puede seguir en combate"
+L["NOT_SEEN"] = "30 s por defecto"
+L["CHECK_NONE"] = "Todavía no tienes sellos en el libro de hechizos."
+L["DEBUG_ON"] = "depuración activada: cada lanzamiento de sello y cambio de auras se escribe en el chat."
+L["DEBUG_OFF"] = "depuración desactivada."
+L["RESET_DONE"] = "duraciones aprendidas borradas."
+L["VERSION"] = "Versión:"
+L["AUTHOR"] = "Autor:"
+L["LINKS"] = "Enlaces"
+L["COMMANDS"] = "Comandos"
+L["SELECT"] = "Seleccionar"
+L["SELECT_TOOLTIP"] = "Selecciona el enlace entero para que puedas copiarlo con Ctrl+C. WoW no deja a los addons escribir en el portapapeles, así que el último paso lo das tú."
+L["ABOUT_DESC"] = "Tu sello de paladín activo con su tiempo restante y un temporizador de golpe para el seal twisting. Se puede mover y cambiar de tamaño. Los ajustes están en General."
+L["CMD_OPEN"] = "Abre los ajustes."
+L["CMD_CHECK"] = "Muestra tus sellos y si se pueden seguir en combate."
+L["CMD_RESET"] = "Borra las duraciones de sellos aprendidas."
+L["CMD_DEBUG"] = "Escribe en el chat cada lanzamiento de sello y cambio de auras."
+L["OPTIONS_TITLE"] = "Opciones de Seal Timers Forever"
+L["DEFAULTS"] = "Valores por defecto"

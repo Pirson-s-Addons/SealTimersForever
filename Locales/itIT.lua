@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- ITALIANO (itIT)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "itIT" then return end
+local L = ns.L
+
+L["TITLE"] = "Timer dei sigilli"
+L["DRAG_HINT"] = "Trascina per spostare"
+L["LOCK"] = "Blocca posizione"
+L["LOCK_TOOLTIP"] = "Sblocca per trascinare le icone dei sigilli in qualsiasi punto dello schermo."
+L["SIZE"] = "Dimensione"
+L["SIZE_TOOLTIP"] = "Dimensione delle icone dei sigilli."
+L["GENERAL_HEADER"] = "Generale"
+L["TWIST_HEADER"] = "Twist dei sigilli"
+L["TWIST_ENABLED"] = "Attiva il twist dei sigilli"
+L["TWIST_ENABLED_TOOLTIP"] = "Timer del colpo, bagliore del sigillo e suono del twist. Disattivalo per tenere solo il timer del sigillo."
+L["TWIST_GLOW"] = "Bagliore del sigillo"
+L["TWIST_GLOW_TOOLTIP"] = "L'icona del sigillo pulsa nella finestra di twist se il sigillo lascia un Eco."
+L["SWING_BAR"] = "Timer del colpo"
+L["SWING_BAR_TOOLTIP"] = "Barra del colpo della mano primaria sopra il sigillo, con il tempo rimanente al prossimo colpo. Linea rossa: ultimo momento per un'abilità con tempo di recupero globale. Linea verde: inizia la finestra di twist."
+L["TWIST_WINDOW"] = "Finestra di twist"
+L["TWIST_WINDOW_TOOLTIP"] = "Secondi prima di ogni colpo in cui il sigillo brilla (linea verde): cambia sigillo in quel momento per il twist (solo sigilli che lasciano un Eco)."
+L["TWIST_SOUND"] = "Suono del twist"
+L["TWIST_SOUND_TOOLTIP"] = "Riproduce un suono quando un colpo arriva dopo aver cambiato da un sigillo che lascia un Eco."
+L["HIT_ICON"] = "Icona a ogni colpo"
+L["HIT_ICON_TOOLTIP"] = "Mostra il sigillo attivo sopra il bersaglio per 1,5 s a ogni colpo in mischia, e anche il sigillo precedente (il suo Eco) quando il colpo fa twist. Sblocca la posizione per spostarla."
+L["CHECK_HEADER"] = "I tuoi sigilli in combattimento:"
+L["CHECK_OPEN"] = "%s: leggibile, tempo esatto"
+L["CHECK_SECRET"] = "%s: aura segreta, seguita tramite il lancio con l'ultima durata vista (%s)"
+L["CHECK_CAST_SECRET"] = "%s: anche il lancio è segreto, non si può seguire in combattimento"
+L["NOT_SEEN"] = "30 s predefiniti"
+L["CHECK_NONE"] = "Nessun sigillo nel tuo libro degli incantesimi."
+L["DEBUG_ON"] = "debug attivo: ogni lancio di sigillo e cambio di aura viene scritto in chat."
+L["DEBUG_OFF"] = "debug disattivato."
+L["RESET_DONE"] = "durate apprese cancellate."
+L["VERSION"] = "Versione:"
+L["AUTHOR"] = "Autore:"
+L["LINKS"] = "Collegamenti"
+L["COMMANDS"] = "Comandi"
+L["SELECT"] = "Seleziona"
+L["SELECT_TOOLTIP"] = "Seleziona l'intero link così puoi copiarlo con Ctrl+C. WoW non permette agli addon di scrivere negli appunti, quindi l'ultimo passo spetta a te."
+L["ABOUT_DESC"] = "Il tuo sigillo da paladino attivo con il tempo rimanente e un timer del colpo per il seal twisting. Spostabile e ridimensionabile. Le impostazioni sono in Generale."
+L["CMD_OPEN"] = "Apre le impostazioni."
+L["CMD_CHECK"] = "Elenca i tuoi sigilli e se possono essere seguiti in combattimento."
+L["CMD_RESET"] = "Cancella le durate dei sigilli apprese."
+L["CMD_DEBUG"] = "Scrive in chat ogni lancio di sigillo e ogni cambio di aura."
+L["OPTIONS_TITLE"] = "Opzioni di Seal Timers Forever"
+L["DEFAULTS"] = "Valori predefiniti"

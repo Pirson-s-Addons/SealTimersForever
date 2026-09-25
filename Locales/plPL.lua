@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- POLSKI (plPL)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "plPL" then return end
+local L = ns.L
+
+L["TITLE"] = "Liczniki pieczęci"
+L["DRAG_HINT"] = "Przeciągnij, aby przesunąć"
+L["LOCK"] = "Zablokuj pozycję"
+L["LOCK_TOOLTIP"] = "Odblokuj, aby przeciągnąć ikony pieczęci w dowolne miejsce ekranu."
+L["SIZE"] = "Rozmiar"
+L["SIZE_TOOLTIP"] = "Rozmiar ikon pieczęci."
+L["GENERAL_HEADER"] = "Ogólne"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Włącz seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Licznik ataku, podświetlenie pieczęci i dźwięk twista. Wyłącz, aby zostawić tylko licznik pieczęci."
+L["TWIST_GLOW"] = "Podświetlenie pieczęci"
+L["TWIST_GLOW_TOOLTIP"] = "Ikona pieczęci pulsuje w oknie twista, jeśli pieczęć zostawia Echo."
+L["SWING_BAR"] = "Licznik ataku"
+L["SWING_BAR_TOOLTIP"] = "Pasek ataku głównej ręki nad pieczęcią z czasem do następnego ataku. Czerwona linia: ostatni moment na umiejętność z globalnym czasem odnowienia. Zielona linia: zaczyna się okno twista."
+L["TWIST_WINDOW"] = "Okno twista"
+L["TWIST_WINDOW_TOOLTIP"] = "Sekundy przed każdym atakiem, w których pieczęć świeci (zielona linia): wtedy zmień pieczęć, aby zrobić twist (tylko pieczęcie zostawiające Echo: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Dźwięk twista"
+L["TWIST_SOUND_TOOLTIP"] = "Odtwarza dźwięk, gdy atak trafi po zmianie z pieczęci zostawiającej Echo."
+L["HIT_ICON"] = "Ikona przy każdym trafieniu"
+L["HIT_ICON_TOOLTIP"] = "Pokazuje aktywną pieczęć nad celem przez 1,5 s przy każdym ataku wręcz, a także poprzednią pieczęć (jej Echo), gdy atak robi twist. Odblokuj pozycję, aby ją przesunąć."
+L["CHECK_HEADER"] = "Twoje pieczęcie w walce:"
+L["CHECK_OPEN"] = "%s: czytelna, dokładny czas"
+L["CHECK_SECRET"] = "%s: tajna aura, śledzona po rzuceniu z ostatnio widzianym czasem trwania (%s)"
+L["CHECK_CAST_SECRET"] = "%s: nawet jej rzucenie jest tajne, nie da się jej śledzić w walce"
+L["NOT_SEEN"] = "domyślnie 30 s"
+L["CHECK_NONE"] = "Nie masz jeszcze pieczęci w księdze zaklęć."
+L["DEBUG_ON"] = "debugowanie włączone: każde rzucenie pieczęci i zmiana aur trafia na czat."
+L["DEBUG_OFF"] = "debugowanie wyłączone."
+L["RESET_DONE"] = "wyczyszczono zapamiętane czasy trwania."
+L["VERSION"] = "Wersja:"
+L["AUTHOR"] = "Autor:"
+L["LINKS"] = "Linki"
+L["COMMANDS"] = "Polecenia"
+L["SELECT"] = "Zaznacz"
+L["SELECT_TOOLTIP"] = "Zaznacza cały link, abyś mógł go skopiować skrótem Ctrl+C. WoW nie pozwala dodatkom zapisywać do schowka, więc ostatni krok należy do ciebie."
+L["ABOUT_DESC"] = "Twoja aktywna pieczęć paladyna z pozostałym czasem oraz licznik ataku do seal twistingu. Można przesuwać i zmieniać rozmiar. Ustawienia są w sekcji Ogólne."
+L["CMD_OPEN"] = "Otwiera ustawienia."
+L["CMD_CHECK"] = "Wyświetla twoje pieczęcie i czy można je śledzić w walce."
+L["CMD_RESET"] = "Czyści zapamiętane czasy trwania pieczęci."
+L["CMD_DEBUG"] = "Wypisuje na czacie każde rzucenie pieczęci i zmianę aur."
+L["OPTIONS_TITLE"] = "Opcje Seal Timers Forever"
+L["DEFAULTS"] = "Wartości domyślne"

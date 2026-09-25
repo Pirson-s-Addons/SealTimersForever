@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- DEUTSCH (deDE)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "deDE" then return end
+local L = ns.L
+
+L["TITLE"] = "Siegel-Timer"
+L["DRAG_HINT"] = "Zum Verschieben ziehen"
+L["LOCK"] = "Position sperren"
+L["LOCK_TOOLTIP"] = "Entsperren, um die Siegel-Symbole an eine beliebige Stelle des Bildschirms zu ziehen."
+L["SIZE"] = "Größe"
+L["SIZE_TOOLTIP"] = "Größe der Siegel-Symbole."
+L["GENERAL_HEADER"] = "Allgemein"
+L["TWIST_HEADER"] = "Siegel-Twisting"
+L["TWIST_ENABLED"] = "Siegel-Twisting aktivieren"
+L["TWIST_ENABLED_TOOLTIP"] = "Schlagtimer, Aufleuchten des Siegels und Twist-Ton. Deaktivieren, um nur den Siegel-Timer zu behalten."
+L["TWIST_GLOW"] = "Aufleuchten des Siegels"
+L["TWIST_GLOW_TOOLTIP"] = "Das Siegel-Symbol pulsiert im Twist-Fenster, wenn das Siegel ein Echo hinterlässt."
+L["SWING_BAR"] = "Schlagtimer"
+L["SWING_BAR_TOOLTIP"] = "Schlagleiste der Waffenhand über dem Siegel mit der Zeit bis zum nächsten Schlag. Rote Linie: letzter Moment für eine Fähigkeit mit globaler Abklingzeit. Grüne Linie: das Twist-Fenster beginnt."
+L["TWIST_WINDOW"] = "Twist-Fenster"
+L["TWIST_WINDOW_TOOLTIP"] = "Sekunden vor jedem Schlag, in denen das Siegel aufleuchtet (grüne Linie): Wechsle dann das Siegel für den Twist (nur Siegel, die ein Echo hinterlassen)."
+L["TWIST_SOUND"] = "Twist-Ton"
+L["TWIST_SOUND_TOOLTIP"] = "Spielt einen Ton ab, wenn ein Schlag nach dem Wechsel von einem Siegel mit Echo trifft."
+L["HIT_ICON"] = "Symbol bei jedem Schlag"
+L["HIT_ICON_TOOLTIP"] = "Zeigt bei jedem Nahkampfschlag 1,5 s lang das aktive Siegel über dem Ziel, und beim Twist auch das vorherige Siegel (sein Echo). Entsperre die Position, um es zu verschieben."
+L["CHECK_HEADER"] = "Deine Siegel im Kampf:"
+L["CHECK_OPEN"] = "%s: lesbar, genaue Zeit"
+L["CHECK_SECRET"] = "%s: geheime Aura, wird über das Wirken mit der zuletzt gesehenen Dauer verfolgt (%s)"
+L["CHECK_CAST_SECRET"] = "%s: selbst das Wirken ist geheim, im Kampf nicht verfolgbar"
+L["NOT_SEEN"] = "standardmäßig 30 s"
+L["CHECK_NONE"] = "Noch keine Siegel in deinem Zauberbuch."
+L["DEBUG_ON"] = "Debug an: jedes Wirken eines Siegels und jede Aura-Änderung wird im Chat ausgegeben."
+L["DEBUG_OFF"] = "Debug aus."
+L["RESET_DONE"] = "Gelernte Dauern gelöscht."
+L["VERSION"] = "Version:"
+L["AUTHOR"] = "Autor:"
+L["LINKS"] = "Links"
+L["COMMANDS"] = "Befehle"
+L["SELECT"] = "Auswählen"
+L["SELECT_TOOLTIP"] = "Markiert den ganzen Link, damit du ihn mit Strg+C kopieren kannst. WoW erlaubt Addons nicht, in die Zwischenablage zu schreiben, den letzten Schritt machst also du."
+L["ABOUT_DESC"] = "Dein aktives Paladin-Siegel mit seiner Restzeit und ein Schlagtimer für Seal Twisting. Verschiebbar und skalierbar. Die Einstellungen findest du unter Allgemein."
+L["CMD_OPEN"] = "Öffnet die Einstellungen."
+L["CMD_CHECK"] = "Listet deine Siegel auf und ob sie im Kampf verfolgt werden können."
+L["CMD_RESET"] = "Löscht die gelernten Siegeldauern."
+L["CMD_DEBUG"] = "Schreibt jeden Siegelzauber und jede Aurenänderung in den Chat."
+L["OPTIONS_TITLE"] = "Seal Timers Forever – Optionen"
+L["DEFAULTS"] = "Standardwerte"

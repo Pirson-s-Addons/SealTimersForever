@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- 简体中文 (zhCN)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "zhCN" then return end
+local L = ns.L
+
+L["TITLE"] = "圣印计时"
+L["DRAG_HINT"] = "拖动以移动"
+L["LOCK"] = "锁定位置"
+L["LOCK_TOOLTIP"] = "解锁后可将圣印图标拖到屏幕任意位置。"
+L["SIZE"] = "大小"
+L["SIZE_TOOLTIP"] = "圣印图标的大小。"
+L["GENERAL_HEADER"] = "常规"
+L["TWIST_HEADER"] = "圣印切换（扭印）"
+L["TWIST_ENABLED"] = "启用圣印切换"
+L["TWIST_ENABLED_TOOLTIP"] = "攻击计时条、圣印闪光和切换提示音。关闭后只保留圣印计时。"
+L["TWIST_GLOW"] = "圣印闪光"
+L["TWIST_GLOW_TOOLTIP"] = "当圣印会留下回响时，圣印图标在切换窗口内闪烁。"
+L["SWING_BAR"] = "攻击计时条"
+L["SWING_BAR_TOOLTIP"] = "圣印上方的主手攻击计时条，显示距下一次攻击的时间。红线：使用公共冷却技能的最后时机。绿线：切换窗口开始。"
+L["TWIST_WINDOW"] = "切换窗口"
+L["TWIST_WINDOW_TOOLTIP"] = "每次攻击前圣印发光的秒数（绿线）：此时切换圣印即可扭印（仅限会留下回响的圣印）。"
+L["TWIST_SOUND"] = "切换提示音"
+L["TWIST_SOUND_TOOLTIP"] = "从会留下回响的圣印切换后，攻击命中时播放提示音。"
+L["HIT_ICON"] = "每次攻击显示图标"
+L["HIT_ICON_TOOLTIP"] = "每次近战攻击时在目标上方显示当前圣印1.5秒；扭印时同时显示上一个圣印（回响）。解锁位置即可移动。"
+L["CHECK_HEADER"] = "你的圣印（战斗中）："
+L["CHECK_OPEN"] = "%s：可读取，时间精确"
+L["CHECK_SECRET"] = "%s：光环保密，按施放追踪，使用最近一次看到的持续时间（%s）"
+L["CHECK_CAST_SECRET"] = "%s：连施放都保密，战斗中无法追踪"
+L["NOT_SEEN"] = "默认30秒"
+L["CHECK_NONE"] = "你的法术书中还没有圣印。"
+L["DEBUG_ON"] = "调试已开启：每次施放圣印和光环变化都会显示在聊天框中。"
+L["DEBUG_OFF"] = "调试已关闭。"
+L["RESET_DONE"] = "已清除记录的持续时间。"
+L["VERSION"] = "版本："
+L["AUTHOR"] = "作者："
+L["LINKS"] = "链接"
+L["COMMANDS"] = "命令"
+L["SELECT"] = "选择"
+L["SELECT_TOOLTIP"] = "选中整个链接，以便你用 Ctrl+C 复制。WoW 不允许插件写入剪贴板，所以最后一步需要你自己完成。"
+L["ABOUT_DESC"] = "显示你当前的圣骑士圣印及剩余时间，并提供用于扭印的攻击计时条。可移动、可缩放。设置位于“常规”中。"
+L["CMD_OPEN"] = "打开设置。"
+L["CMD_CHECK"] = "列出你的圣印以及战斗中能否追踪。"
+L["CMD_RESET"] = "清除已记录的圣印持续时间。"
+L["CMD_DEBUG"] = "在聊天框中输出每次施放圣印和光环变化。"
+L["OPTIONS_TITLE"] = "Seal Timers Forever 选项"
+L["DEFAULTS"] = "默认值"

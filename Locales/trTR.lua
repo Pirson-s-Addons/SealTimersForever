@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- TÜRKÇE (trTR)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "trTR" then return end
+local L = ns.L
+
+L["TITLE"] = "Mühür Zamanlayıcıları"
+L["DRAG_HINT"] = "Taşımak için sürükle"
+L["LOCK"] = "Konumu kilitle"
+L["LOCK_TOOLTIP"] = "Mühür simgelerini ekranda istediğin yere sürüklemek için kilidi aç."
+L["SIZE"] = "Boyut"
+L["SIZE_TOOLTIP"] = "Mühür simgelerinin boyutu."
+L["GENERAL_HEADER"] = "Genel"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Seal twisting'i etkinleştir"
+L["TWIST_ENABLED_TOOLTIP"] = "Vuruş zamanlayıcısı, mühür parıltısı ve twist sesi. Yalnızca mühür zamanlayıcısını tutmak için kapat."
+L["TWIST_GLOW"] = "Mühür parıltısı"
+L["TWIST_GLOW_TOOLTIP"] = "Mühür bir Echo bıraktığında, mühür simgesi twist penceresinde yanıp söner."
+L["SWING_BAR"] = "Vuruş zamanlayıcısı"
+L["SWING_BAR_TOOLTIP"] = "Mührün üstünde, bir sonraki vuruşa kalan süreyi gösteren ana el vuruş çubuğu. Kırmızı çizgi: genel bekleme süreli bir yetenek için son an. Yeşil çizgi: twist penceresi başlar."
+L["TWIST_WINDOW"] = "Twist penceresi"
+L["TWIST_WINDOW_TOOLTIP"] = "Her vuruştan önce mührün parladığı saniyeler (yeşil çizgi): twist için o anda mühür değiştir (yalnızca Echo bırakan mühürler: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Twist sesi"
+L["TWIST_SOUND_TOOLTIP"] = "Echo bırakan bir mühürden geçtikten sonra vuruş isabet ettiğinde ses çalar."
+L["HIT_ICON"] = "Her vuruşta simge"
+L["HIT_ICON_TOOLTIP"] = "Her yakın dövüş vuruşunda etkin mührü hedefin üstünde 1,5 sn gösterir; vuruş twist yaptığında önceki mührü (Echo'sunu) da gösterir. Taşımak için konumun kilidini aç."
+L["CHECK_HEADER"] = "Savaştaki mühürlerin:"
+L["CHECK_OPEN"] = "%s: okunabilir, kesin süre"
+L["CHECK_SECRET"] = "%s: gizli aura, son görülen süreyle (%s) kullanımından takip edilir"
+L["CHECK_CAST_SECRET"] = "%s: kullanımı bile gizli, savaşta takip edilemez"
+L["NOT_SEEN"] = "varsayılan 30 sn"
+L["CHECK_NONE"] = "Büyü kitabında henüz mühür yok."
+L["DEBUG_ON"] = "hata ayıklama açık: her mühür kullanımı ve aura değişikliği sohbete yazılır."
+L["DEBUG_OFF"] = "hata ayıklama kapalı."
+L["RESET_DONE"] = "öğrenilen süreler temizlendi."
+L["VERSION"] = "Sürüm:"
+L["AUTHOR"] = "Yazar:"
+L["LINKS"] = "Bağlantılar"
+L["COMMANDS"] = "Komutlar"
+L["SELECT"] = "Seç"
+L["SELECT_TOOLTIP"] = "Ctrl+C ile kopyalayabilmen için bağlantının tamamını seçer. WoW eklentilerin panoya yazmasına izin vermez, bu yüzden son adım sana kalıyor."
+L["ABOUT_DESC"] = "Etkin paladin mührün ve kalan süresi, ayrıca seal twisting için bir vuruş zamanlayıcısı. Taşınabilir ve boyutlandırılabilir. Ayarlar Genel bölümünde."
+L["CMD_OPEN"] = "Ayarları açar."
+L["CMD_CHECK"] = "Mühürlerini ve savaşta takip edilip edilemeyeceklerini listeler."
+L["CMD_RESET"] = "Öğrenilen mühür sürelerini temizler."
+L["CMD_DEBUG"] = "Her mühür kullanımını ve aura değişikliğini sohbete yazar."
+L["OPTIONS_TITLE"] = "Seal Timers Forever Seçenekleri"
+L["DEFAULTS"] = "Varsayılan değerler"

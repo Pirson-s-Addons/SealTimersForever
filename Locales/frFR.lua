@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- FRANÇAIS (frFR)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "frFR" then return end
+local L = ns.L
+
+L["TITLE"] = "Minuteurs de sceaux"
+L["DRAG_HINT"] = "Faites glisser pour déplacer"
+L["LOCK"] = "Verrouiller la position"
+L["LOCK_TOOLTIP"] = "Déverrouillez pour faire glisser les icônes des sceaux n'importe où sur l'écran."
+L["SIZE"] = "Taille"
+L["SIZE_TOOLTIP"] = "Taille des icônes des sceaux."
+L["GENERAL_HEADER"] = "Général"
+L["TWIST_HEADER"] = "Twist de sceaux"
+L["TWIST_ENABLED"] = "Activer le twist de sceaux"
+L["TWIST_ENABLED_TOOLTIP"] = "Minuteur de frappe, éclat du sceau et son de twist. Désactivez-le pour ne garder que le minuteur du sceau."
+L["TWIST_GLOW"] = "Éclat du sceau"
+L["TWIST_GLOW_TOOLTIP"] = "L'icône du sceau pulse dans la fenêtre de twist si le sceau laisse un Écho."
+L["SWING_BAR"] = "Minuteur de frappe"
+L["SWING_BAR_TOOLTIP"] = "Barre de frappe de la main droite au-dessus du sceau, avec le temps restant avant la prochaine frappe. Ligne rouge : dernier moment pour une technique soumise au temps de recharge global. Ligne verte : début de la fenêtre de twist."
+L["TWIST_WINDOW"] = "Fenêtre de twist"
+L["TWIST_WINDOW_TOOLTIP"] = "Secondes avant chaque frappe pendant lesquelles le sceau brille (ligne verte) : changez de sceau à ce moment pour faire le twist (seulement les sceaux qui laissent un Écho)."
+L["TWIST_SOUND"] = "Son de twist"
+L["TWIST_SOUND_TOOLTIP"] = "Joue un son quand une frappe arrive après avoir changé depuis un sceau qui laisse un Écho."
+L["HIT_ICON"] = "Icône à chaque frappe"
+L["HIT_ICON_TOOLTIP"] = "Affiche le sceau actif au-dessus de la cible pendant 1,5 s à chaque frappe en mêlée, ainsi que le sceau précédent (son Écho) quand la frappe fait un twist. Déverrouillez la position pour le déplacer."
+L["CHECK_HEADER"] = "Vos sceaux en combat :"
+L["CHECK_OPEN"] = "%s : lisible, temps exact"
+L["CHECK_SECRET"] = "%s : aura secrète, suivie par son incantation avec la dernière durée vue (%s)"
+L["CHECK_CAST_SECRET"] = "%s : même son incantation est secrète, impossible de la suivre en combat"
+L["NOT_SEEN"] = "30 s par défaut"
+L["CHECK_NONE"] = "Aucun sceau dans votre grimoire pour l'instant."
+L["DEBUG_ON"] = "débogage activé : chaque incantation de sceau et changement d'aura est affiché dans la discussion."
+L["DEBUG_OFF"] = "débogage désactivé."
+L["RESET_DONE"] = "durées apprises effacées."
+L["VERSION"] = "Version :"
+L["AUTHOR"] = "Auteur :"
+L["LINKS"] = "Liens"
+L["COMMANDS"] = "Commandes"
+L["SELECT"] = "Sélectionner"
+L["SELECT_TOOLTIP"] = "Sélectionne le lien entier pour que tu puisses le copier avec Ctrl+C. WoW ne laisse pas les addons écrire dans le presse-papiers, la dernière étape est donc pour toi."
+L["ABOUT_DESC"] = "Ton sceau de paladin actif avec son temps restant, et un minuteur de coup pour le seal twisting. Déplaçable et redimensionnable. Les réglages sont dans Général."
+L["CMD_OPEN"] = "Ouvre les réglages."
+L["CMD_CHECK"] = "Liste tes sceaux et indique s'ils peuvent être suivis en combat."
+L["CMD_RESET"] = "Efface les durées de sceaux apprises."
+L["CMD_DEBUG"] = "Écrit dans le chat chaque lancement de sceau et chaque changement d'aura."
+L["OPTIONS_TITLE"] = "Options de Seal Timers Forever"
+L["DEFAULTS"] = "Valeurs par défaut"

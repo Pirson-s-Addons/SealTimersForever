@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- ČEŠTINA (csCZ)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "csCZ" then return end
+local L = ns.L
+
+L["TITLE"] = "Časovače pečetí"
+L["DRAG_HINT"] = "Přetáhni pro přesun"
+L["LOCK"] = "Zamknout pozici"
+L["LOCK_TOOLTIP"] = "Odemkni, abys mohl přetáhnout ikony pečetí kamkoli na obrazovku."
+L["SIZE"] = "Velikost"
+L["SIZE_TOOLTIP"] = "Velikost ikon pečetí."
+L["GENERAL_HEADER"] = "Obecné"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Zapnout seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Časovač úderu, záře pečeti a zvuk twistu. Vypni, pokud chceš jen časovač pečeti."
+L["TWIST_GLOW"] = "Záře pečeti"
+L["TWIST_GLOW_TOOLTIP"] = "Ikona pečeti pulzuje v okně twistu, když pečeť zanechává Echo."
+L["SWING_BAR"] = "Časovač úderu"
+L["SWING_BAR_TOOLTIP"] = "Lišta úderu hlavní ruky nad pečetí s časem do dalšího úderu. Červená čára: poslední okamžik pro schopnost s globálním cooldownem. Zelená čára: začíná okno twistu."
+L["TWIST_WINDOW"] = "Okno twistu"
+L["TWIST_WINDOW_TOOLTIP"] = "Sekundy před každým úderem, kdy pečeť září (zelená čára): tehdy vyměň pečeť pro twist (jen pečetě zanechávající Echo: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Zvuk twistu"
+L["TWIST_SOUND_TOOLTIP"] = "Přehraje zvuk, když úder zasáhne po výměně z pečeti, která zanechává Echo."
+L["HIT_ICON"] = "Ikona při každém úderu"
+L["HIT_ICON_TOOLTIP"] = "Při každém úderu na blízko ukáže aktivní pečeť nad cílem na 1,5 s a při twistu i předchozí pečeť (její Echo). Pro přesun odemkni pozici."
+L["CHECK_HEADER"] = "Tvé pečetě v boji:"
+L["CHECK_OPEN"] = "%s: čitelná, přesný čas"
+L["CHECK_SECRET"] = "%s: tajná aura, sleduje se podle seslání s naposledy viděnou délkou (%s)"
+L["CHECK_CAST_SECRET"] = "%s: i její seslání je tajné, v boji ji nelze sledovat"
+L["NOT_SEEN"] = "výchozích 30 s"
+L["CHECK_NONE"] = "Ve své knize kouzel zatím nemáš žádné pečetě."
+L["DEBUG_ON"] = "ladění zapnuto: každé seslání pečeti a změna aur se vypíše do chatu."
+L["DEBUG_OFF"] = "ladění vypnuto."
+L["RESET_DONE"] = "naučené délky vymazány."
+L["VERSION"] = "Verze:"
+L["AUTHOR"] = "Autor:"
+L["LINKS"] = "Odkazy"
+L["COMMANDS"] = "Příkazy"
+L["SELECT"] = "Vybrat"
+L["SELECT_TOOLTIP"] = "Vybere celý odkaz, abys ho mohl zkopírovat pomocí Ctrl+C. WoW nedovolí doplňkům zapisovat do schránky, takže poslední krok je na tobě."
+L["ABOUT_DESC"] = "Tvá aktivní paladinská pečeť se zbývajícím časem a časovač úderu pro seal twisting. Lze přesouvat a měnit velikost. Nastavení najdeš v sekci Obecné."
+L["CMD_OPEN"] = "Otevře nastavení."
+L["CMD_CHECK"] = "Vypíše tvé pečetě a zda je lze sledovat v boji."
+L["CMD_RESET"] = "Vymaže naučené délky pečetí."
+L["CMD_DEBUG"] = "Vypíše do chatu každé seslání pečeti a změnu aur."
+L["OPTIONS_TITLE"] = "Možnosti Seal Timers Forever"
+L["DEFAULTS"] = "Výchozí hodnoty"

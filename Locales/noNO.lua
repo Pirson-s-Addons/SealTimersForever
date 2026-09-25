@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- NORSK (noNO)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "noNO" then return end
+local L = ns.L
+
+L["TITLE"] = "Segltidtakere"
+L["DRAG_HINT"] = "Dra for å flytte"
+L["LOCK"] = "Lås posisjon"
+L["LOCK_TOOLTIP"] = "Lås opp for å dra seglikonene hvor som helst på skjermen."
+L["SIZE"] = "Størrelse"
+L["SIZE_TOOLTIP"] = "Størrelse på seglikonene."
+L["GENERAL_HEADER"] = "Generelt"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Aktiver seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Slagtidtaker, seglglød og twist-lyd. Slå av for å bare beholde segltidtakeren."
+L["TWIST_GLOW"] = "Seglglød"
+L["TWIST_GLOW_TOOLTIP"] = "Seglikonet pulserer i twist-vinduet når seglet etterlater et Echo."
+L["SWING_BAR"] = "Slagtidtaker"
+L["SWING_BAR_TOOLTIP"] = "Slaglinje for hovedhånden over seglet med tiden til neste slag. Rød linje: siste øyeblikk for en evne med global nedkjøling. Grønn linje: twist-vinduet starter."
+L["TWIST_WINDOW"] = "Twist-vindu"
+L["TWIST_WINDOW_TOOLTIP"] = "Sekunder før hvert slag der seglet lyser (grønn linje): bytt segl da for å twiste (bare segl som etterlater et Echo: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Twist-lyd"
+L["TWIST_SOUND_TOOLTIP"] = "Spiller en lyd når et slag treffer etter bytte fra et segl som etterlater et Echo."
+L["HIT_ICON"] = "Ikon ved hvert slag"
+L["HIT_ICON_TOOLTIP"] = "Viser det aktive seglet over målet i 1,5 s ved hvert nærkampslag, og også det forrige seglet (dets Echo) når slaget twister. Lås opp posisjonen for å flytte det."
+L["CHECK_HEADER"] = "Seglene dine i kamp:"
+L["CHECK_OPEN"] = "%s: lesbar, nøyaktig tid"
+L["CHECK_SECRET"] = "%s: hemmelig aura, spores via kastet med sist sette varighet (%s)"
+L["CHECK_CAST_SECRET"] = "%s: selv kastet er hemmelig, kan ikke spores i kamp"
+L["NOT_SEEN"] = "30 s som standard"
+L["CHECK_NONE"] = "Ingen segl i trylleboken ennå."
+L["DEBUG_ON"] = "feilsøking på: hvert seglkast og auraendring skrives i chatten."
+L["DEBUG_OFF"] = "feilsøking av."
+L["RESET_DONE"] = "lærte varigheter slettet."
+L["VERSION"] = "Versjon:"
+L["AUTHOR"] = "Forfatter:"
+L["LINKS"] = "Lenker"
+L["COMMANDS"] = "Kommandoer"
+L["SELECT"] = "Merk"
+L["SELECT_TOOLTIP"] = "Merker hele lenken slik at du kan kopiere den med Ctrl+C. WoW lar ikke tillegg skrive til utklippstavlen, så det siste steget tar du selv."
+L["ABOUT_DESC"] = "Ditt aktive paladinsegl med gjenværende tid, og en slagtidtaker for seal twisting. Flyttbar og skalerbar. Innstillingene finner du under Generelt."
+L["CMD_OPEN"] = "Åpner innstillingene."
+L["CMD_CHECK"] = "Viser seglene dine og om de kan spores i kamp."
+L["CMD_RESET"] = "Sletter lærte seglvarigheter."
+L["CMD_DEBUG"] = "Skriver hvert seglkast og auraendring i chatten."
+L["OPTIONS_TITLE"] = "Seal Timers Forever – alternativer"
+L["DEFAULTS"] = "Standardverdier"

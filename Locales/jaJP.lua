@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- 日本語 (jaJP)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "jaJP" then return end
+local L = ns.L
+
+L["TITLE"] = "シールタイマー"
+L["DRAG_HINT"] = "ドラッグで移動"
+L["LOCK"] = "位置をロック"
+L["LOCK_TOOLTIP"] = "ロックを解除すると、シールのアイコンを画面上の好きな場所にドラッグできます。"
+L["SIZE"] = "サイズ"
+L["SIZE_TOOLTIP"] = "シールのアイコンのサイズ。"
+L["GENERAL_HEADER"] = "一般"
+L["TWIST_HEADER"] = "シールツイスト"
+L["TWIST_ENABLED"] = "シールツイストを有効にする"
+L["TWIST_ENABLED_TOOLTIP"] = "スイングタイマー、シールの点滅、ツイスト音。オフにするとシールタイマーだけが残ります。"
+L["TWIST_GLOW"] = "シールの点滅"
+L["TWIST_GLOW_TOOLTIP"] = "シールが Echo を残す場合、ツイストウィンドウ内でシールのアイコンが点滅します。"
+L["SWING_BAR"] = "スイングタイマー"
+L["SWING_BAR_TOOLTIP"] = "シールの上に表示されるメインハンドのスイングバーで、次のスイングまでの残り時間を示します。赤線：グローバルクールダウンのあるアビリティを使える最後の瞬間。緑線：ツイストウィンドウの開始。"
+L["TWIST_WINDOW"] = "ツイストウィンドウ"
+L["TWIST_WINDOW_TOOLTIP"] = "各スイングの前にシールが光る秒数（緑線）：その間にシールを切り替えるとツイストになります（Echo を残すシールのみ：Command、Righteousness、Fury、Justice）。"
+L["TWIST_SOUND"] = "ツイスト音"
+L["TWIST_SOUND_TOOLTIP"] = "Echo を残すシールから切り替えた後、スイングが命中すると音が鳴ります。"
+L["HIT_ICON"] = "スイングごとのアイコン"
+L["HIT_ICON_TOOLTIP"] = "近接スイングのたびに、有効なシールをターゲットの上に1.5秒表示します。スイングがツイストした場合は前のシール（その Echo）も表示します。移動するには位置のロックを解除してください。"
+L["CHECK_HEADER"] = "戦闘中のシール："
+L["CHECK_OPEN"] = "%s：読み取り可能、正確な時間"
+L["CHECK_SECRET"] = "%s：秘密のオーラ。最後に確認した効果時間（%s）で詠唱から追跡します"
+L["CHECK_CAST_SECRET"] = "%s：詠唱さえ秘密のため、戦闘中は追跡できません"
+L["NOT_SEEN"] = "デフォルトで30秒"
+L["CHECK_NONE"] = "呪文書にまだシールがありません。"
+L["DEBUG_ON"] = "デバッグオン：シールの詠唱とオーラの変化をすべてチャットに出力します。"
+L["DEBUG_OFF"] = "デバッグオフ。"
+L["RESET_DONE"] = "記録した効果時間を消去しました。"
+L["VERSION"] = "バージョン："
+L["AUTHOR"] = "作者："
+L["LINKS"] = "リンク"
+L["COMMANDS"] = "コマンド"
+L["SELECT"] = "選択"
+L["SELECT_TOOLTIP"] = "Ctrl+Cでコピーできるようにリンク全体を選択します。WoWはアドオンがクリップボードに書き込むことを許可していないため、最後の手順はご自身で行ってください。"
+L["ABOUT_DESC"] = "有効なパラディンのシールと残り時間、そしてシールツイスト用のスイングタイマー。移動・サイズ変更可能。設定は「一般」にあります。"
+L["CMD_OPEN"] = "設定を開きます。"
+L["CMD_CHECK"] = "シールの一覧と、戦闘中に追跡できるかどうかを表示します。"
+L["CMD_RESET"] = "記録したシールの効果時間を消去します。"
+L["CMD_DEBUG"] = "シールの詠唱とオーラの変化をすべてチャットに出力します。"
+L["OPTIONS_TITLE"] = "Seal Timers Forever オプション"
+L["DEFAULTS"] = "デフォルト値"

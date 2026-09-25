@@ -707,50 +707,13 @@ local function Check()
     if not any then print("  " .. L.CHECK_NONE) end
 end
 
+-- El panel vive en UI/Options.lua; aqui solo se le pasa lo que necesita
 local function CreateOptions()
-    -- En morado tambien en Opciones > AddOns, como en la lista de addons
-    local category, layout = Settings.RegisterVerticalLayoutCategory(BRAND .. "Seal Timers Forever|r")
-
-    local function Checkbox(key, label, tooltip, onChange)
-        local setting = Settings.RegisterAddOnSetting(category, "SealTimersForever_" .. key, key,
-            db, Settings.VarType.Boolean, label, DEFAULTS[key])
-        if onChange then setting:SetValueChangedCallback(onChange) end
-        return Settings.CreateCheckbox(category, setting, tooltip)
-    end
-
-    local function Slider(key, label, tooltip, min, max, step, format, onChange)
-        local setting = Settings.RegisterAddOnSetting(category, "SealTimersForever_" .. key, key,
-            db, Settings.VarType.Number, label, DEFAULTS[key])
-        setting:SetValueChangedCallback(onChange)
-        local options = Settings.CreateSliderOptions(min, max, step)
-        options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, format)
-        return Settings.CreateSlider(category, setting, options, tooltip)
-    end
-
-    -- General: posicion y tamano del bloque
-    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.GENERAL_HEADER))
-    Checkbox("locked", L.LOCK, L.LOCK_TOOLTIP, ApplyLock)
-    Slider("scale", L.SIZE, L.SIZE_TOOLTIP, 0.5, 3, 0.1, function(value)
-        return string.format("%d%%", math.floor(value * 100 + 0.5))
-    end, ApplyScale)
-
-    -- Seal twisting: un interruptor general y, colgando de el, sus opciones
-    -- (se ven desactivadas mientras el interruptor esta apagado)
-    layout:AddInitializer(CreateSettingsListSectionHeaderInitializer(L.TWIST_HEADER))
-    local twist = Checkbox("twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, function()
-        ApplySwingBar()
-        ApplyHitAnchor()
-    end)
-    local function TwistOn() return db.twistEnabled end
-    Checkbox("swingBar", L.SWING_BAR, L.SWING_BAR_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
-    Checkbox("twistGlow", L.TWIST_GLOW, L.TWIST_GLOW_TOOLTIP, ApplySwingBar):SetParentInitializer(twist, TwistOn)
-    Slider("twistWindow", L.TWIST_WINDOW, L.TWIST_WINDOW_TOOLTIP, 0.1, 1, 0.1, function(value)
-        return string.format("%.1f s", value)
-    end, UpdateTicks):SetParentInitializer(twist, TwistOn)
-    Checkbox("twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP):SetParentInitializer(twist, TwistOn)
-    Checkbox("hitIcon", L.HIT_ICON, L.HIT_ICON_TOOLTIP, ApplyHitAnchor):SetParentInitializer(twist, TwistOn)
-
-    Settings.RegisterAddOnCategory(category)
+    local category = ns.CreateOptions({
+        db = db, defaults = DEFAULTS,
+        ApplyLock = ApplyLock, ApplyScale = ApplyScale, ApplySwingBar = ApplySwingBar,
+        ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks,
+    })
 
     SLASH_SEALTIMERSFOREVER1 = "/stf"
     SlashCmdList.SEALTIMERSFOREVER = function(msg)

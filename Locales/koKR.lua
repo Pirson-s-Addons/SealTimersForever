@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- 한국어 (koKR)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "koKR" then return end
+local L = ns.L
+
+L["TITLE"] = "문장 타이머"
+L["DRAG_HINT"] = "끌어서 이동"
+L["LOCK"] = "위치 잠금"
+L["LOCK_TOOLTIP"] = "잠금을 해제하면 문장 아이콘을 화면 어디로든 끌어 옮길 수 있습니다."
+L["SIZE"] = "크기"
+L["SIZE_TOOLTIP"] = "문장 아이콘의 크기입니다."
+L["GENERAL_HEADER"] = "일반"
+L["TWIST_HEADER"] = "문장 교체 (트위스트)"
+L["TWIST_ENABLED"] = "문장 교체 사용"
+L["TWIST_ENABLED_TOOLTIP"] = "공격 타이머, 문장 강조 효과, 트위스트 소리입니다. 끄면 문장 타이머만 남습니다."
+L["TWIST_GLOW"] = "문장 강조 효과"
+L["TWIST_GLOW_TOOLTIP"] = "문장이 메아리를 남기는 경우 트위스트 구간에서 문장 아이콘이 깜박입니다."
+L["SWING_BAR"] = "공격 타이머"
+L["SWING_BAR_TOOLTIP"] = "문장 위에 표시되는 주 무기 공격 바로, 다음 공격까지 남은 시간을 보여줍니다. 빨간 선: 전역 재사용 대기시간 기술을 쓸 수 있는 마지막 순간. 초록 선: 트위스트 구간 시작."
+L["TWIST_WINDOW"] = "트위스트 구간"
+L["TWIST_WINDOW_TOOLTIP"] = "각 공격 전 문장이 빛나는 시간(초록 선)입니다. 이때 문장을 바꾸면 트위스트가 됩니다 (메아리를 남기는 문장만)."
+L["TWIST_SOUND"] = "트위스트 소리"
+L["TWIST_SOUND_TOOLTIP"] = "메아리를 남기는 문장에서 바꾼 뒤 공격이 적중하면 소리를 재생합니다."
+L["HIT_ICON"] = "매 공격마다 아이콘"
+L["HIT_ICON_TOOLTIP"] = "근접 공격마다 활성 문장을 대상 위에 1.5초 동안 표시하고, 트위스트 시에는 이전 문장(메아리)도 함께 표시합니다. 위치 잠금을 해제하면 옮길 수 있습니다."
+L["CHECK_HEADER"] = "전투 중 내 문장:"
+L["CHECK_OPEN"] = "%s: 읽기 가능, 정확한 시간"
+L["CHECK_SECRET"] = "%s: 비밀 효과, 마지막으로 확인된 지속시간으로 시전 기준 추적 (%s)"
+L["CHECK_CAST_SECRET"] = "%s: 시전도 비밀이라 전투 중에는 추적할 수 없음"
+L["NOT_SEEN"] = "기본값 30초"
+L["CHECK_NONE"] = "아직 주문책에 문장이 없습니다."
+L["DEBUG_ON"] = "디버그 켜짐: 모든 문장 시전과 효과 변화를 대화창에 표시합니다."
+L["DEBUG_OFF"] = "디버그 꺼짐."
+L["RESET_DONE"] = "학습한 지속시간을 초기화했습니다."
+L["VERSION"] = "버전:"
+L["AUTHOR"] = "제작자:"
+L["LINKS"] = "링크"
+L["COMMANDS"] = "명령어"
+L["SELECT"] = "선택"
+L["SELECT_TOOLTIP"] = "Ctrl+C로 복사할 수 있도록 링크 전체를 선택합니다. WoW는 애드온이 클립보드에 쓰는 것을 허용하지 않으므로 마지막 단계는 직접 해야 합니다."
+L["ABOUT_DESC"] = "활성화된 성기사 문장과 남은 시간, 그리고 문장 교체(seal twisting)용 공격 타이머. 이동 및 크기 조절 가능. 설정은 일반에 있습니다."
+L["CMD_OPEN"] = "설정을 엽니다."
+L["CMD_CHECK"] = "문장 목록과 전투 중 추적 가능 여부를 표시합니다."
+L["CMD_RESET"] = "학습한 문장 지속시간을 초기화합니다."
+L["CMD_DEBUG"] = "모든 문장 시전과 오라 변화를 대화창에 기록합니다."
+L["OPTIONS_TITLE"] = "Seal Timers Forever 설정"
+L["DEFAULTS"] = "기본값"

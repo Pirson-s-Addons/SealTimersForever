@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- TIẾNG VIỆT (viVN)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "viVN" then return end
+local L = ns.L
+
+L["TITLE"] = "Bộ đếm Ấn"
+L["DRAG_HINT"] = "Kéo để di chuyển"
+L["LOCK"] = "Khóa vị trí"
+L["LOCK_TOOLTIP"] = "Mở khóa để kéo biểu tượng ấn tới bất kỳ đâu trên màn hình."
+L["SIZE"] = "Kích thước"
+L["SIZE_TOOLTIP"] = "Kích thước biểu tượng ấn."
+L["GENERAL_HEADER"] = "Chung"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Bật seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Bộ đếm đòn đánh, ấn phát sáng và âm thanh twist. Tắt để chỉ giữ bộ đếm ấn."
+L["TWIST_GLOW"] = "Ấn phát sáng"
+L["TWIST_GLOW_TOOLTIP"] = "Biểu tượng ấn nhấp nháy trong cửa sổ twist khi ấn để lại Echo."
+L["SWING_BAR"] = "Bộ đếm đòn đánh"
+L["SWING_BAR_TOOLTIP"] = "Thanh đòn đánh tay chính phía trên ấn, hiện thời gian còn lại tới đòn tiếp theo. Vạch đỏ: thời điểm cuối cho kỹ năng có hồi chiêu chung. Vạch xanh: cửa sổ twist bắt đầu."
+L["TWIST_WINDOW"] = "Cửa sổ twist"
+L["TWIST_WINDOW_TOOLTIP"] = "Số giây trước mỗi đòn đánh mà ấn phát sáng (vạch xanh): đổi ấn lúc đó để twist (chỉ các ấn để lại Echo: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Âm thanh twist"
+L["TWIST_SOUND_TOOLTIP"] = "Phát âm thanh khi đòn đánh trúng sau khi đổi từ ấn để lại Echo."
+L["HIT_ICON"] = "Biểu tượng mỗi đòn"
+L["HIT_ICON_TOOLTIP"] = "Hiện ấn đang hoạt động phía trên mục tiêu trong 1,5 giây mỗi đòn cận chiến, và cả ấn trước đó (Echo của nó) khi đòn đánh twist. Mở khóa vị trí để di chuyển."
+L["CHECK_HEADER"] = "Các ấn của bạn trong chiến đấu:"
+L["CHECK_OPEN"] = "%s: đọc được, thời gian chính xác"
+L["CHECK_SECRET"] = "%s: aura bí mật, theo dõi qua lần thi triển với thời lượng thấy lần cuối (%s)"
+L["CHECK_CAST_SECRET"] = "%s: ngay cả lần thi triển cũng bí mật, không thể theo dõi trong chiến đấu"
+L["NOT_SEEN"] = "mặc định 30 giây"
+L["CHECK_NONE"] = "Chưa có ấn nào trong sách phép."
+L["DEBUG_ON"] = "gỡ lỗi bật: mỗi lần thi triển ấn và thay đổi aura được ghi vào khung chat."
+L["DEBUG_OFF"] = "gỡ lỗi tắt."
+L["RESET_DONE"] = "đã xóa các thời lượng đã học."
+L["VERSION"] = "Phiên bản:"
+L["AUTHOR"] = "Tác giả:"
+L["LINKS"] = "Liên kết"
+L["COMMANDS"] = "Lệnh"
+L["SELECT"] = "Chọn"
+L["SELECT_TOOLTIP"] = "Chọn toàn bộ liên kết để bạn có thể sao chép bằng Ctrl+C. WoW không cho phép addon ghi vào bộ nhớ tạm, nên bước cuối là của bạn."
+L["ABOUT_DESC"] = "Ấn hiệp sĩ đang hoạt động cùng thời gian còn lại, và bộ đếm đòn đánh cho seal twisting. Có thể di chuyển và đổi kích thước. Cài đặt nằm trong mục Chung."
+L["CMD_OPEN"] = "Mở cài đặt."
+L["CMD_CHECK"] = "Liệt kê các ấn của bạn và cho biết có theo dõi được trong chiến đấu không."
+L["CMD_RESET"] = "Xóa các thời lượng ấn đã học."
+L["CMD_DEBUG"] = "Ghi mỗi lần thi triển ấn và thay đổi aura vào khung chat."
+L["OPTIONS_TITLE"] = "Tùy chọn Seal Timers Forever"
+L["DEFAULTS"] = "Giá trị mặc định"

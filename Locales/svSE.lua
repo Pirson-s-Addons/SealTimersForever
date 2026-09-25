@@ -1,0 +1,51 @@
+local ADDON_NAME, ns = ...
+
+-- ==========================================
+-- SVENSKA (svSE)
+-- ==========================================
+local locale = GetLocale()
+if locale ~= "svSE" then return end
+local L = ns.L
+
+L["TITLE"] = "Sigilltimer"
+L["DRAG_HINT"] = "Dra för att flytta"
+L["LOCK"] = "Lås position"
+L["LOCK_TOOLTIP"] = "Lås upp för att dra sigillikonerna var som helst på skärmen."
+L["SIZE"] = "Storlek"
+L["SIZE_TOOLTIP"] = "Storlek på sigillikonerna."
+L["GENERAL_HEADER"] = "Allmänt"
+L["TWIST_HEADER"] = "Seal twisting"
+L["TWIST_ENABLED"] = "Aktivera seal twisting"
+L["TWIST_ENABLED_TOOLTIP"] = "Slagtimer, sigillglöd och twist-ljud. Stäng av för att bara behålla sigilltimern."
+L["TWIST_GLOW"] = "Sigillglöd"
+L["TWIST_GLOW_TOOLTIP"] = "Sigillikonen pulserar i twist-fönstret när sigillet lämnar ett Echo."
+L["SWING_BAR"] = "Slagtimer"
+L["SWING_BAR_TOOLTIP"] = "Slagmätare för huvudhanden ovanför sigillet med tiden till nästa slag. Röd linje: sista chansen för en förmåga med global nedkylning. Grön linje: twist-fönstret börjar."
+L["TWIST_WINDOW"] = "Twist-fönster"
+L["TWIST_WINDOW_TOOLTIP"] = "Sekunder före varje slag då sigillet lyser (grön linje): byt sigill då för att twista (bara sigill som lämnar ett Echo: Command, Righteousness, Fury, Justice)."
+L["TWIST_SOUND"] = "Twist-ljud"
+L["TWIST_SOUND_TOOLTIP"] = "Spelar ett ljud när ett slag träffar efter byte från ett sigill som lämnar ett Echo."
+L["HIT_ICON"] = "Ikon vid varje slag"
+L["HIT_ICON_TOOLTIP"] = "Visar det aktiva sigillet ovanför målet i 1,5 s vid varje närstridsslag, och även det föregående sigillet (dess Echo) när slaget twistar. Lås upp positionen för att flytta den."
+L["CHECK_HEADER"] = "Dina sigill i strid:"
+L["CHECK_OPEN"] = "%s: läsbar, exakt tid"
+L["CHECK_SECRET"] = "%s: hemlig aura, följs via kastet med senast sedda varaktighet (%s)"
+L["CHECK_CAST_SECRET"] = "%s: även kastet är hemligt, kan inte följas i strid"
+L["NOT_SEEN"] = "30 s som standard"
+L["CHECK_NONE"] = "Inga sigill i din trollformelbok än."
+L["DEBUG_ON"] = "felsökning på: varje sigillkast och auraändring skrivs i chatten."
+L["DEBUG_OFF"] = "felsökning av."
+L["RESET_DONE"] = "inlärda varaktigheter rensade."
+L["VERSION"] = "Version:"
+L["AUTHOR"] = "Författare:"
+L["LINKS"] = "Länkar"
+L["COMMANDS"] = "Kommandon"
+L["SELECT"] = "Markera"
+L["SELECT_TOOLTIP"] = "Markerar hela länken så att du kan kopiera den med Ctrl+C. WoW låter inte tillägg skriva till urklipp, så det sista steget gör du själv."
+L["ABOUT_DESC"] = "Ditt aktiva paladinsigill med återstående tid, och en slagtimer för seal twisting. Flyttbar och skalbar. Inställningarna finns under Allmänt."
+L["CMD_OPEN"] = "Öppnar inställningarna."
+L["CMD_CHECK"] = "Listar dina sigill och om de kan följas i strid."
+L["CMD_RESET"] = "Rensar inlärda sigillvaraktigheter."
+L["CMD_DEBUG"] = "Skriver varje sigillkast och auraändring i chatten."
+L["OPTIONS_TITLE"] = "Seal Timers Forever – alternativ"
+L["DEFAULTS"] = "Standardvärden"
