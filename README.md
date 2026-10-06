@@ -20,6 +20,17 @@
 
 ---
 
+## 📸 Screenshots · Capturas
+
+<table>
+<tr>
+<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/669/screenshot_1-png.png" alt="Seal timer bar"><br><sub>Seal timer bar · Barra del sello</sub></td>
+<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/670/opcions-menu-seal-timers-forever-png.png" alt="Options"><br><sub>Options · Opciones</sub></td>
+</tr>
+</table>
+
+---
+
 ## What it does
 
 **Seal Timers Forever** shows your active paladin seal as an icon with a countdown, so you always know how long it has left, in and out of combat.
