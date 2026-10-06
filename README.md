@@ -15,17 +15,17 @@
 </p>
 
 <p align="center">
-<a href="#-español">🇪🇸 Español</a>
+<a href="README.es.md">🇪🇸 Español</a>
 </p>
 
 ---
 
-## 📸 Screenshots · Capturas
+## 📸 Screenshots
 
 <table>
 <tr>
-<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/669/screenshot_1-png.png" alt="Seal timer bar"><br><sub>Seal timer bar · Barra del sello</sub></td>
-<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/670/opcions-menu-seal-timers-forever-png.png" alt="Options"><br><sub>Options · Opciones</sub></td>
+<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/669/screenshot_1-png.png" alt="Seal timer bar"><br><sub>Seal timer bar</sub></td>
+<td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/670/opcions-menu-seal-timers-forever-png.png" alt="Options"><br><sub>Options</sub></td>
 </tr>
 </table>
 
@@ -63,41 +63,6 @@ It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`
 ## Notes
 
 In WoW Forever, aura data is **secret** to addons during combat, so the addon cannot simply read the seal's buff. Instead it tracks **your own seal casts**, which are never secret, and counts the seal's duration (30 s in Forever) from the moment you cast it. When the game lets the addon read the real aura duration, that one is used.
-
----
-
-## 🇪🇸 Español
-
-**Seal Timers Forever** muestra tu sello de paladín activo como un icono con cuenta atrás, para que sepas siempre cuánto le queda, en combate y fuera de él.
-
-Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de Rectitud, del Cruzado, de Sabiduría, de Luz, de Justicia... y cualquier sello nuevo que aprendas, en cualquier idioma del cliente.
-
-### Funciones
-
-- Icono del sello activo con su **tiempo restante**, actualizado en combate y fuera de él.
-- **Relanzar** un sello reinicia su tiempo; **cambiar** de sello sustituye el icono (en Forever solo hay un sello activo).
-- Detecta todos los sellos de tu libro de hechizos, incluidos los nuevos de Forever como el **Sello de Furia**.
-- Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %.
-- Solo se activa en paladines. Ligero, sin librerías. Los ajustes están en el panel del propio juego: **Opciones → AddOns**.
-
-### Instalación
-
-1. Descarga el zip de la [última release](https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest).
-2. Extrae la carpeta `SealTimersForever` en `World of Warcraft/_classic_beta_/Interface/AddOns/`.
-3. Reinicia el juego y activa el addon.
-
-Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc` (`Camelot` es el game type de Forever), así que ningún otro cliente lo muestra.
-
-### Uso
-
-- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**.
-- `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
-- `/stf debug` escribe en el chat cada lanzamiento de sello y cambio de auras (para reportar fallos).
-- `/stf reset` borra las duraciones de sellos aprendidas.
-
-### Notas
-
-En WoW Forever los datos de las auras son **secretos** para los addons en combate, así que el addon no puede leer sin más el bufo del sello. En su lugar sigue **tus propios lanzamientos de sello**, que nunca son secretos, y cuenta la duración del sello (30 s en Forever) desde que lo lanzas. Cuando el juego deja leer la duración real del aura, se usa esa.
 
 ---
 
