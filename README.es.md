@@ -55,9 +55,9 @@ Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc
 
 ## Uso
 
-- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**.
+- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, más una pestaña **Posición** con deslizadores y muestra en vivo.
 - `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
-- `/stf debug` escribe en el chat cada lanzamiento de sello y cambio de auras (para reportar fallos).
+- `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
 - `/stf reset` borra las duraciones de sellos aprendidas.
 
 ## Notas

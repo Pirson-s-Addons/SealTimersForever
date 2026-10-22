@@ -43,6 +43,13 @@ local SEAL_SPELLS = { 21084, 21082, 20165, 20166, 20164, 20375 }
 -- Sellos SIN Eco en Forever (Cruzado, Luz y Sabiduria): el resto, incluidos
 -- los nuevos como el Sello de Furia, se pueden twistear.
 local NO_ECHO_SPELLS = { 21082, 20165, 20166 }
+-- Ecos del talento Twist of Light (Furia, Orden, Rectitud, Justicia): auras
+-- propias sin duracion que consume el siguiente golpe. Solo para /stf debug.
+local ECHO_SPELLS = { 1311701, 1311703, 1311704, 1311705 }
+-- Muestra para colocar las cosas: Rectitud en el bloque; Rectitud y Orden
+-- (golpe con twist) en el icono de golpe
+local DEMO_SEAL, DEMO_HITS = 21084, { 21084, 20375 }
+local HOLY = 2
 
 local ICON_SIZE = 40
 local SPACING = 4
@@ -90,7 +97,14 @@ local swingBar
 local hitAnchor, hitIcons = nil, {}
 local sealTextures = {}        -- nombre del sello -> ultima textura vista
 local debugMode = false
+local echoNames, echoIDs = {}, {}  -- /stf debug: nombre de cada Eco; auraInstanceID -> nombre
+local previewing = false       -- pestana Posicion abierta: se ve la muestra
 local anchor
+
+-- Se ensena la muestra: desbloqueado o con la pestana Posicion abierta
+local function Demo()
+    return previewing or not db.locked
+end
 
 --------------------------------------------------
 -- VALORES SECRETOS
@@ -139,6 +153,10 @@ local function BuildSealNames()
         local name = C_Spell.GetSpellName(spellID)
         if name then noEcho[name] = true end
     end
+    for _, spellID in ipairs(ECHO_SPELLS) do
+        local name = C_Spell.GetSpellName(spellID)
+        if name then echoNames[name] = true end
+    end
     -- Con un solo nombre, o un prefijo tan corto que casaria con cualquier cosa,
     -- solo valen los nombres exactos.
     if count < 2 or #sealPrefix < 4 then sealPrefix = nil end
@@ -177,25 +195,44 @@ end
 --------------------------------------------------
 -- ICONOS (uno por sello, por nombre)
 --------------------------------------------------
-local HideSeal
+local HideSeal, Layout
+
+-- Segundos truncados, como el tiempo del bufo de Blizzard (su formateador usa
+-- Truncate). El contador del Cooldown redondea hacia arriba y marcaba 1 s mas.
+local truncSeconds
+if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter then
+    truncSeconds = C_StringUtil.CreateNumericRuleFormatter()
+    truncSeconds:SetBreakpoints({ { threshold = 0, step = 1,
+        rounding = Enum.NumericRuleFormatRounding.Down, format = "%d" } })
+end
+
+local function TruncateCountdown(cooldown)
+    if truncSeconds then pcall(cooldown.SetCountdownFormatter, cooldown, truncSeconds) end
+end
+
+-- Icono con cuenta atras grande y amarilla, como la de OmniCC en los WeakAuras
+local function BuildIcon(parent, size, fontSize)
+    local icon = CreateFrame("Frame", nil, parent)
+    icon:SetSize(size, size)
+    icon.texture = icon:CreateTexture(nil, "ARTWORK")
+    icon.texture:SetAllPoints()
+    icon.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    icon.cooldown = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
+    icon.cooldown:SetAllPoints()
+    icon.cooldown:SetReverse(true)
+    icon.cooldown:SetDrawEdge(false)
+    icon.cooldown:SetHideCountdownNumbers(false)
+    local countdown = icon.cooldown:GetCountdownFontString()
+    countdown:SetFont(STANDARD_TEXT_FONT, fontSize, "OUTLINE")
+    countdown:SetTextColor(1, 0.82, 0)
+    return icon
+end
 
 local function AcquireIcon()
     local icon = table.remove(pool)
     if not icon then
-        icon = CreateFrame("Frame", nil, anchor)
-        icon:SetSize(ICON_SIZE, ICON_SIZE)
-        icon.texture = icon:CreateTexture(nil, "ARTWORK")
-        icon.texture:SetAllPoints()
-        icon.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        icon.cooldown = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
-        icon.cooldown:SetAllPoints()
-        icon.cooldown:SetReverse(true)
-        icon.cooldown:SetDrawEdge(false)
-        icon.cooldown:SetHideCountdownNumbers(false)
-        -- Numeros grandes y amarillos, como los de OmniCC en los WeakAuras
-        local countdown = icon.cooldown:GetCountdownFontString()
-        countdown:SetFont(STANDARD_TEXT_FONT, 18, "OUTLINE")
-        countdown:SetTextColor(1, 0.82, 0)
+        icon = BuildIcon(anchor, ICON_SIZE, 18)
+        TruncateCountdown(icon.cooldown)
         -- Brillo de "cambia de sello ya" (zona de twist)
         icon.glow = icon:CreateTexture(nil, "OVERLAY")
         icon.glow:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
@@ -208,19 +245,31 @@ local function AcquireIcon()
         -- llegaron secretas y no se pudieron leer).
         icon.cooldown:SetScript("OnCooldownDone", function(self)
             local parent = self:GetParent()
-            if parent.hasTimer and parent.sealName then HideSeal(parent.sealName) end
+            if parent.hasTimer and parent.sealName then
+                HideSeal(parent.sealName)
+                Layout()
+            end
         end)
     end
     icon:Show()
     return icon
 end
 
-local function Layout()
+-- Sello de muestra en el bloque mientras se coloca, si no hay ninguno de verdad
+local function UpdateSealDemo()
+    local demo = anchor.demo
+    local show = Demo() and #order == 0
+    if show and not demo:IsShown() then demo.cooldown:SetCooldown(GetTime(), DEFAULT_DURATION) end
+    demo:SetShown(show)
+end
+
+Layout = function()
     for i, name in ipairs(order) do
         local icon = icons[name]
         icon:ClearAllPoints()
         icon:SetPoint("LEFT", anchor, "LEFT", (i - 1) * (ICON_SIZE + SPACING), 0)
     end
+    UpdateSealDemo()
 end
 
 local function ShowSeal(name, texture)
@@ -263,7 +312,11 @@ local function HideOtherSeals(name)
     end
 end
 
+-- En combate no se puede preguntar: GetAuraDataByAuraInstanceID da error
+-- ("Auras cannot be accessed when secret while tainted"). Se da por buena y al
+-- salir de combate FullScan relee todo.
 local function AuraExists(id)
+    if C_Secrets.ShouldAurasBeSecret() then return true end
     local data = C_UnitAuras.GetAuraDataByAuraInstanceID("player", id)
     if IsSecret(data) then return true end
     return data ~= nil
@@ -372,12 +425,20 @@ end
 -- sello, gana el activo; si no se sabe cual es, la de mas duracion (un eco dura
 -- menos que el sello).
 local function FullScan()
+    -- Justo al salir de combate (o tras /reload en combate) las auras aun son
+    -- secretas y GetUnitAuras da error: se deja todo como esta y se reintenta.
+    local ok, auras = pcall(C_UnitAuras.GetUnitAuras, "player", "HELPFUL")
+    if not ok then
+        Debug("auras aun secretas: se relee en 0,5 s")
+        C_Timer.After(0.5, FullScan)
+        return
+    end
     -- HideSeal borra el sello activo y cuando se lanzo: se guardan antes
     local wanted = activeSeal
     local wantedCastAt = wanted and icons[wanted] and icons[wanted].castAt
     for i = #order, 1, -1 do HideSeal(order[i]) end
     local best, bestTotal
-    for _, aura in ipairs(List(C_UnitAuras.GetUnitAuras("player", "HELPFUL"))) do
+    for _, aura in ipairs(List(auras)) do
         local name, id = aura.name, aura.auraInstanceID
         if IsSeal(name) and Readable(id) then
             if name == wanted then
@@ -412,6 +473,27 @@ local function RefreshTracked()
     end
 end
 
+-- /stf debug: aparece un Eco de Twist of Light (si su aura se puede leer)
+local function DebugEcho(aura)
+    local name, id = aura.name, aura.auraInstanceID
+    if not Readable(name) or not echoNames[name] then return end
+    if Readable(id) then echoIDs[id] = name end
+    Debug("eco: " .. name)
+end
+
+-- /stf debug: dano que recibe el objetivo (UNIT_COMBAT), para ver si el del
+-- sello llega aparte y legible. Sagrado (2) justo tras el golpe = sello o Eco.
+local function DebugUnitCombat(action, amount, school)
+    if not debugMode then return end
+    if IsSecret(action) or IsSecret(amount) or IsSecret(school) then
+        Debug("objetivo: UNIT_COMBAT secreto")
+        return
+    end
+    local since = swingStart and ("%.2f s tras tu golpe"):format(GetTime() - swingStart) or "sin golpe"
+    Debug(("objetivo: %s %s, escuela %s%s, %s"):format(tostring(action), tostring(amount),
+        tostring(school), school == HOLY and " (Sagrado)" or "", since))
+end
+
 local function OnUnitAura(info)
     if not Readable(info) then
         Debug("UNIT_AURA sin datos legibles")
@@ -429,8 +511,15 @@ local function OnUnitAura(info)
         Layout()
         return
     end
-    for _, aura in ipairs(List(info.addedAuras)) do TrackAura(aura) end
+    for _, aura in ipairs(List(info.addedAuras)) do
+        if debugMode then DebugEcho(aura) end
+        TrackAura(aura)
+    end
     for _, id in ipairs(List(info.removedAuraInstanceIDs)) do
+        if Readable(id) and echoIDs[id] then
+            Debug("eco consumido: " .. echoIDs[id])
+            echoIDs[id] = nil
+        end
         if Readable(id) then
             for _, name in ipairs(order) do
                 if icons[name].auraInstanceID == id then LoseAura(name) break end
@@ -511,7 +600,7 @@ local function OnSwingUpdate()
     if elapsed > swingDuration + 1 then
         swingStart = nil
         SetGlow(false)
-        if db.locked then swingBar:Hide() end
+        if not Demo() then swingBar:Hide() end
         return
     end
     if swingBar:IsShown() then
@@ -524,10 +613,10 @@ local function OnSwingUpdate()
 end
 
 local function ApplySwingBar()
-    -- Desbloqueado se ensena aunque no haya golpes, para colocarla
-    local show = db.twistEnabled and db.swingBar and (swingStart ~= nil or not db.locked)
+    -- Al colocarla (Demo) se ensena aunque no haya golpes
+    local show = db.twistEnabled and db.swingBar and (swingStart ~= nil or Demo())
     swingBar:SetShown(show)
-    if not db.locked and not swingStart then
+    if Demo() and not swingStart then
         swingDuration = swingDuration or 3.5
         UpdateTicks()
         swingBar:SetValue(0.7)
@@ -563,22 +652,16 @@ end
 
 -- Iconos de golpe: el sello activo y, si el golpe aplica un twist, tambien el
 -- anterior (el Eco), con HIT_DURATION s de cuenta atras.
+local ApplyHitAnchor
+
 local function CreateHitIcon(index)
-    local hit = CreateFrame("Frame", nil, hitAnchor)
-    hit:SetSize(HIT_SIZE, HIT_SIZE)
+    local hit = BuildIcon(hitAnchor, HIT_SIZE, 16)
     hit:SetPoint("LEFT", hitAnchor, "LEFT", (index - 1) * (HIT_SIZE + SPACING), 0)
-    hit.texture = hit:CreateTexture(nil, "ARTWORK")
-    hit.texture:SetAllPoints()
-    hit.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    hit.cooldown = CreateFrame("Cooldown", nil, hit, "CooldownFrameTemplate")
-    hit.cooldown:SetAllPoints()
-    hit.cooldown:SetReverse(true)
-    hit.cooldown:SetDrawEdge(false)
-    hit.cooldown:SetHideCountdownNumbers(false)
-    local countdown = hit.cooldown:GetCountdownFontString()
-    countdown:SetFont(STANDARD_TEXT_FONT, 16, "OUTLINE")
-    countdown:SetTextColor(1, 0.82, 0)
-    hit.cooldown:SetScript("OnCooldownDone", function(self) self:GetParent():Hide() end)
+    hit.cooldown:SetScript("OnCooldownDone", function(self)
+        self:GetParent():Hide()
+        -- Colocandolo, tras un golpe de verdad vuelve la muestra
+        if Demo() then ApplyHitAnchor() end
+    end)
     hit:Hide()
     return hit
 end
@@ -593,13 +676,19 @@ local function ShowHits(names)
     end
 end
 
-local function ApplyHitAnchor()
-    local unlocked = not db.locked and db.twistEnabled and db.hitIcon
-    hitAnchor:EnableMouse(unlocked)
-    hitAnchor.bg:SetShown(unlocked)
-    hitAnchor.label:SetShown(unlocked)
-    if not (db.twistEnabled and db.hitIcon) then
-        for i = 1, #hitIcons do hitIcons[i]:Hide() end
+ApplyHitAnchor = function()
+    local enabled = db.twistEnabled and db.hitIcon
+    local demo = enabled and Demo()
+    hitAnchor:EnableMouse(enabled and not db.locked)
+    hitAnchor.bg:SetShown(demo)
+    hitAnchor.label:SetShown(demo)
+    -- Muestra: un golpe con twist (sello activo y su Eco), sin cuenta atras
+    for i, hit in ipairs(hitIcons) do
+        if demo then
+            hit.texture:SetTexture(C_Spell.GetSpellTexture(DEMO_HITS[i]))
+            hit.cooldown:Clear()
+        end
+        hit:SetShown(demo)
     end
 end
 
@@ -615,6 +704,7 @@ local function CreateHitAnchor()
         self:StopMovingOrSizing()
         local point, _, _, x, y = self:GetPoint()
         db.hitPoint, db.hitX, db.hitY = point, x, y
+        if ns.RefreshOptions then ns.RefreshOptions() end
     end)
     hitAnchor.bg = hitAnchor:CreateTexture(nil, "BACKGROUND")
     hitAnchor.bg:SetAllPoints()
@@ -648,12 +738,60 @@ end
 --------------------------------------------------
 -- BLOQUE MOVIL
 --------------------------------------------------
+-- Arrastrar solo desbloqueado; el fondo, el rotulo y la muestra tambien con la
+-- pestana Posicion abierta
 local function ApplyLock()
     anchor:EnableMouse(not db.locked)
-    anchor.bg:SetShown(not db.locked)
-    anchor.label:SetShown(not db.locked)
+    anchor.bg:SetShown(Demo())
+    anchor.label:SetShown(Demo())
+    UpdateSealDemo()
     if swingBar then ApplySwingBar() end
     if hitAnchor then ApplyHitAnchor() end
+end
+
+local function SetPreview(on)
+    previewing = on
+    ApplyLock()
+end
+
+-- Posicion al pixel (pestana Posicion). Los deslizadores van en pixeles de
+-- pantalla desde el centro; db guarda el punto en la escala del bloque, como
+-- al arrastrar.
+local POSITIONS = {
+    seals = { point = "point", x = "x", y = "y", frame = function() return anchor end },
+    hit = { point = "hitPoint", x = "hitX", y = "hitY", frame = function() return hitAnchor end },
+}
+
+local function Round(value) return math.floor(value + 0.5) end
+
+local function Place(pos)
+    local f = pos.frame()
+    f:ClearAllPoints()
+    f:SetPoint(db[pos.point], UIParent, db[pos.point], db[pos.x], db[pos.y])
+end
+
+local function GetOffset(what)
+    local pos, scale = POSITIONS[what], db.scale
+    if db[pos.point] == "CENTER" then return Round(db[pos.x] * scale), Round(db[pos.y] * scale) end
+    -- Arrastrado (otro punto de anclaje): se mide donde quedo
+    local x, y = pos.frame():GetCenter()
+    if not x then return 0, 0 end -- ponytail: sin colocar aun, sale en 0
+    local cx, cy = UIParent:GetCenter()
+    return Round(x * scale - cx), Round(y * scale - cy)
+end
+
+local function SetOffset(what, x, y)
+    local pos, scale = POSITIONS[what], db.scale
+    local ox, oy = GetOffset(what)
+    db[pos.point], db[pos.x], db[pos.y] = "CENTER", (x or ox) / scale, (y or oy) / scale
+    Place(pos)
+end
+
+local function ResetPositions()
+    for _, pos in pairs(POSITIONS) do
+        db[pos.point], db[pos.x], db[pos.y] = DEFAULTS[pos.point], DEFAULTS[pos.x], DEFAULTS[pos.y]
+        Place(pos)
+    end
 end
 
 local function ApplyScale()
@@ -673,6 +811,7 @@ local function CreateAnchor()
         self:StopMovingOrSizing()
         local point, _, _, x, y = self:GetPoint()
         db.point, db.x, db.y = point, x, y
+        if ns.RefreshOptions then ns.RefreshOptions() end
     end)
 
     -- Solo se ven desbloqueado: marcan donde va el bloque aunque no haya sellos
@@ -682,6 +821,15 @@ local function CreateAnchor()
     anchor.label = anchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     anchor.label:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
     anchor.label:SetText(BRAND .. L.TITLE .. "|r - " .. L.DRAG_HINT)
+    -- Sello de muestra: vuelve a empezar al acabar mientras se coloca
+    anchor.demo = BuildIcon(anchor, ICON_SIZE, 18)
+    TruncateCountdown(anchor.demo.cooldown)
+    anchor.demo:SetPoint("LEFT", anchor, "LEFT", 0, 0)
+    anchor.demo.texture:SetTexture(C_Spell.GetSpellTexture(DEMO_SEAL))
+    anchor.demo.cooldown:SetScript("OnCooldownDone", function(self)
+        self:SetCooldown(GetTime(), DEFAULT_DURATION)
+    end)
+    anchor.demo:Hide()
 
     ApplyLock()
     ApplyScale()
@@ -713,6 +861,8 @@ local function CreateOptions()
         db = db, defaults = DEFAULTS,
         ApplyLock = ApplyLock, ApplyScale = ApplyScale, ApplySwingBar = ApplySwingBar,
         ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks,
+        SetPreview = SetPreview, GetOffset = GetOffset, SetOffset = SetOffset,
+        ResetPositions = ResetPositions,
     })
 
     SLASH_SEALTIMERSFOREVER1 = "/stf"
@@ -722,6 +872,11 @@ local function CreateOptions()
         if command == "debug" then
             debugMode = not debugMode
             print(BRAND .. "Seal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
+            -- Si el juego marca los Ecos como secretos en combate
+            for _, spellID in ipairs(ECHO_SPELLS) do
+                Debug(("eco %s (%d): %s en combate"):format(C_Spell.GetSpellName(spellID) or "?", spellID,
+                    C_Secrets.ShouldSpellAuraBeSecret(spellID) and "secreto" or "legible"))
+            end
             return
         end
         if command == "reset" then
@@ -738,7 +893,7 @@ end
 --------------------------------------------------
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("PLAYER_LOGIN")
-frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
+frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
     if event == "PLAYER_LOGIN" then
         -- Solo tiene sentido para paladines: en el resto no se crea nada.
         if select(2, UnitClass("player")) ~= "PALADIN" then
@@ -766,6 +921,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         self:RegisterEvent("PLAYER_REGEN_ENABLED")
         self:RegisterEvent("SPELLS_CHANGED")
         self:RegisterEvent("PLAYER_SWING")
+        self:RegisterUnitEvent("UNIT_COMBAT", "target")
         FullScan()
     elseif event == "UNIT_AURA" then
         OnUnitAura(arg2)
@@ -773,6 +929,8 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3)
         OnSealCast(arg3)
     elseif event == "PLAYER_SWING" then
         OnSwing(arg1, arg2)
+    elseif event == "UNIT_COMBAT" then
+        DebugUnitCombat(arg2, arg4, arg5)
     elseif event == "PLAYER_REGEN_ENABLED" then
         -- Fuera de combate el siguiente golpe no cuenta como twist
         sealAtLastSwing = nil

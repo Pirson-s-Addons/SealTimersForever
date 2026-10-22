@@ -55,9 +55,9 @@ It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`
 
 ## Usage
 
-- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**.
+- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, plus a **Position** tab with sliders and a live preview.
 - `/stf check` lists the seals in your spellbook and how each one is tracked in combat.
-- `/stf debug` writes every seal cast and aura change to the chat (for bug reports).
+- `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
 - `/stf reset` clears the learned seal durations.
 
 ## Notes
