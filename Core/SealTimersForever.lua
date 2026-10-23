@@ -185,11 +185,14 @@ local function HasEcho(name)
     return name ~= nil and not noEcho[name]
 end
 
+-- Solo por ID, nunca por nombre: el dano del Sello de Orden (y otros efectos
+-- del sello) se llama igual que el sello y tambien lanza UNIT_SPELLCAST_SUCCEEDED,
+-- asi que por nombre cada golpe con efecto reiniciaba el contador.
 local function SealNameForSpell(spellID)
     if not Readable(spellID) then return nil end
     if knownSeals[spellID] then return knownSeals[spellID] end
-    local name = C_Spell.GetSpellName(spellID)
-    return IsSeal(name) and name or nil
+    if tContains(SEAL_SPELLS, spellID) then return C_Spell.GetSpellName(spellID) end
+    return nil
 end
 
 --------------------------------------------------
