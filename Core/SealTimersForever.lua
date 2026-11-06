@@ -682,7 +682,7 @@ end
 ApplyHitAnchor = function()
     local enabled = db.twistEnabled and db.hitIcon
     local demo = enabled and Demo()
-    hitAnchor:EnableMouse(enabled and not db.locked)
+    hitAnchor:EnableMouse(demo)
     hitAnchor.bg:SetShown(demo)
     hitAnchor.label:SetShown(demo)
     -- Muestra: un golpe con twist (sello activo y su Eco), sin cuenta atras
@@ -702,6 +702,7 @@ local function CreateHitAnchor()
     hitAnchor:SetMovable(true)
     hitAnchor:SetClampedToScreen(true)
     hitAnchor:RegisterForDrag("LeftButton")
+    hitAnchor:SetHitRectInsets(0, -(HIT_SIZE + SPACING), 0, 0) -- tambien el segundo icono
     hitAnchor:SetScript("OnDragStart", hitAnchor.StartMoving)
     hitAnchor:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
@@ -741,10 +742,10 @@ end
 --------------------------------------------------
 -- BLOQUE MOVIL
 --------------------------------------------------
--- Arrastrar solo desbloqueado; el fondo, el rotulo y la muestra tambien con la
--- pestana Posicion abierta
+-- Arrastrar, el fondo, el rotulo y la muestra: desbloqueado o con la pestana
+-- Posicion abierta
 local function ApplyLock()
-    anchor:EnableMouse(not db.locked)
+    anchor:EnableMouse(Demo())
     anchor.bg:SetShown(Demo())
     anchor.label:SetShown(Demo())
     UpdateSealDemo()
@@ -809,6 +810,9 @@ local function CreateAnchor()
     anchor:SetMovable(true)
     anchor:SetClampedToScreen(true)
     anchor:RegisterForDrag("LeftButton")
+    -- Tambien se agarra por la barra de golpe, que sobresale del bloque
+    local barSide = -(SWING_WIDTH - ICON_SIZE) / 2
+    anchor:SetHitRectInsets(barSide, barSide, -(SWING_HEIGHT + 6), 0)
     anchor:SetScript("OnDragStart", anchor.StartMoving)
     anchor:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
