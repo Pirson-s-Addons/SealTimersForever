@@ -42,20 +42,21 @@ Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de R
 - Icono del sello activo con su **tiempo restante**, actualizado en combate y fuera de él.
 - **Relanzar** un sello reinicia su tiempo; **cambiar** de sello sustituye el icono (en Forever solo hay un sello activo).
 - Detecta todos los sellos de tu libro de hechizos, incluidos los nuevos de Forever como el **Sello de Furia**.
+- **Aviso al acabarse**: el icono se ilumina en los últimos segundos del sello (5 s por defecto) para que lo renueves a tiempo. Eliges el tipo de aviso (brillo rojo que late, brillo rojo fijo, icono que parpadea o el destello de Blizzard), su intensidad y cuándo empieza, con vista previa en vivo.
 - Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %.
 - Solo se activa en paladines. Ligero, sin librerías. Los ajustes están en el panel del propio juego: **Opciones → AddOns**.
 
 ## Instalación
 
 1. Descarga el zip de la [última release](https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest).
-2. Extrae la carpeta `SealTimersForever` en `World of Warcraft/_classic_beta_/Interface/AddOns/`.
+2. Extrae la carpeta `SealTimersForever` en `World of Warcraft/_forever_/Interface/AddOns/`.
 3. Reinicia el juego y activa el addon.
 
 Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc` (`Camelot` es el game type de Forever), así que ningún otro cliente lo muestra.
 
 ## Uso
 
-- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, más una pestaña **Posición** con deslizadores y muestra en vivo.
+- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, una pestaña **Aviso** para el aviso al acabarse y una pestaña **Posición** con deslizadores y muestra en vivo.
 - `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
 - `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
 - `/stf reset` borra las duraciones de sellos aprendidas.

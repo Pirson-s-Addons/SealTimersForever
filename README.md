@@ -42,20 +42,21 @@ It works with **every seal in WoW Forever**: Seal of Fury, Command, Righteousnes
 - Active seal icon with its **remaining time**, updated in and out of combat.
 - **Recasting** a seal restarts its timer; **switching** seals replaces the icon (only one seal is active in Forever).
 - Detects every seal in your spellbook, including new Forever seals like **Seal of Fury**.
+- **Running-out alert**: the icon lights up in the last seconds of the seal (5 s by default) so you recast it in time. Pick the alert type (pulsing red glow, steady red glow, flashing icon or Blizzard's proc glow), its intensity and when it starts, with a live preview.
 - **Movable** anywhere on the screen and **resizable** from 50% to 300%.
 - Only runs for paladins. Lightweight, no libraries. Settings live in the game's own **Options → AddOns** panel.
 
 ## Installation
 
 1. Download the zip from the [latest release](https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest).
-2. Extract the `SealTimersForever` folder into `World of Warcraft/_classic_beta_/Interface/AddOns/`.
+2. Extract the `SealTimersForever` folder into `World of Warcraft/_forever_/Interface/AddOns/`.
 3. Restart WoW and enable the addon.
 
 It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`Camelot` is Forever's game type), so no other client lists it.
 
 ## Usage
 
-- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, plus a **Position** tab with sliders and a live preview.
+- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, an **Alert** tab for the running-out alert and a **Position** tab with sliders and a live preview.
 - `/stf check` lists the seals in your spellbook and how each one is tracked in combat.
 - `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
 - `/stf reset` clears the learned seal durations.

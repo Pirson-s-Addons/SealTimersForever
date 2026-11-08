@@ -65,6 +65,8 @@ local DEFAULT_DURATION = 30
 local BRAND = "|cffd597ff"
 local DEFAULTS = {
     locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
+    -- Brillo cuando al sello le quedan expireTime s o menos (como el WeakAura)
+    expireGlow = true, expireTime = 5, expireStyle = "pulse", expireIntensity = 1,
     twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
     -- Icono en cada golpe: donde lo tenia el WeakAura (encima del objetivo)
     hitIcon = true, hitPoint = "CENTER", hitX = 60, hitY = 175,
@@ -213,6 +215,61 @@ local function TruncateCountdown(cooldown)
     if truncSeconds then pcall(cooldown.SetCountdownFormatter, cooldown, truncSeconds) end
 end
 
+-- Aviso de "el sello se acaba". Tipos (expireStyle): pulse = brillo rojo que
+-- late, steady = brillo rojo fijo, flash = el icono parpadea, proc = el destello
+-- de Blizzard de las habilidades activadas. expireIntensity (0,25-1) es su fuerza.
+local function AddExpireGlow(icon, size)
+    size = size or ICON_SIZE
+    icon.expire = icon:CreateTexture(nil, "OVERLAY")
+    icon.expire:SetTexture("Interface\\Buttons\\UI-ActionButton-Border")
+    icon.expire:SetBlendMode("ADD")
+    icon.expire:SetVertexColor(1, 0.15, 0.1)
+    icon.expire:SetPoint("CENTER")
+    icon.expire:SetSize(size * 1.8, size * 1.8)
+    icon.expire:Hide()
+    -- Destello de Blizzard (Blizzard_ActionBar, tambien en Forever); si la
+    -- plantilla no existiera, ese tipo usa el brillo que late.
+    local ok, proc = pcall(CreateFrame, "Frame", nil, icon, "ActionButtonSpellAlertTemplate")
+    if ok and proc then
+        proc:SetSize(size * 1.4, size * 1.4)
+        proc:SetPoint("CENTER")
+        proc:Hide()
+        icon.proc = proc
+    end
+end
+
+-- Muestra el aviso del tipo elegido, o lo quita (on = false)
+local function SetExpireAlert(icon, on, now)
+    local style, power = db.expireStyle, db.expireIntensity
+    if style == "proc" and not icon.proc then style = "pulse" end
+    local glow = on and (style == "pulse" or style == "steady")
+    icon.expire:SetShown(glow)
+    if glow then
+        icon.expire:SetAlpha(power * (style == "pulse" and 0.6 + 0.4 * math.sin(now * 8) or 1))
+    end
+    local flash = on and style == "flash"
+    icon.texture:SetAlpha(flash and 1 - power * 0.8 * (0.5 + 0.5 * math.sin(now * 10)) or 1)
+    if icon.proc then
+        local proc = on and style == "proc"
+        if proc then
+            icon.proc:SetAlpha(power)
+            if not icon.proc:IsShown() then
+                icon.proc:Show()
+                icon.proc.ProcLoop:Play()
+            end
+        elseif icon.proc:IsShown() then
+            icon.proc.ProcLoop:Stop()
+            icon.proc:Hide()
+        end
+    end
+end
+
+-- Enciende el aviso si al icono le quedan expireTime s o menos (endsAt nil = sin tiempo)
+local function UpdateExpireGlow(icon, endsAt, now)
+    local left = endsAt and endsAt - now
+    SetExpireAlert(icon, db.expireGlow and left and left > 0 and left <= db.expireTime, now)
+end
+
 -- Icono con cuenta atras grande y amarilla, como la de OmniCC en los WeakAuras
 local function BuildIcon(parent, size, fontSize)
     local icon = CreateFrame("Frame", nil, parent)
@@ -244,6 +301,7 @@ local function AcquireIcon()
         icon.glow:SetPoint("CENTER")
         icon.glow:SetSize(ICON_SIZE * 1.8, ICON_SIZE * 1.8)
         icon.glow:Hide()
+        AddExpireGlow(icon)
         -- Se acabo el tiempo: el sello expiro (tambien cubre retiradas que
         -- llegaron secretas y no se pudieron leer).
         icon.cooldown:SetScript("OnCooldownDone", function(self)
@@ -262,7 +320,10 @@ end
 local function UpdateSealDemo()
     local demo = anchor.demo
     local show = Demo() and #order == 0
-    if show and not demo:IsShown() then demo.cooldown:SetCooldown(GetTime(), DEFAULT_DURATION) end
+    if show and not demo:IsShown() then
+        demo.startAt = GetTime()
+        demo.cooldown:SetCooldown(demo.startAt, DEFAULT_DURATION)
+    end
     demo:SetShown(show)
 end
 
@@ -295,6 +356,7 @@ HideSeal = function(name)
     if not icon then return end
     icon:Hide()
     icon.glow:Hide()
+    SetExpireAlert(icon, false)
     -- El temporizador se para antes de volver al pool: un OnCooldownDone tardio
     -- no debe quitar el sello que reutilice este icono.
     icon.hasTimer = false
@@ -596,7 +658,19 @@ end
 
 -- El reloj del golpe va en el bloque (siempre visible), no en la barra: asi el
 -- parpadeo funciona aunque la barra este desactivada.
+-- ponytail: solo sellos con lanzamiento visto; uno leido del aura tras /reload
+-- no brilla (su fin podria ser secreto).
+local function UpdateExpireGlows()
+    local now = GetTime()
+    for name, icon in pairs(icons) do
+        UpdateExpireGlow(icon, icon.hasTimer and icon.castAt and icon.castAt + SealDuration(name), now)
+    end
+    local demo = anchor.demo
+    if demo:IsShown() then UpdateExpireGlow(demo, demo.startAt + DEFAULT_DURATION, now) end
+end
+
 local function OnSwingUpdate()
+    UpdateExpireGlows()
     if not swingStart then return end
     local elapsed = GetTime() - swingStart
     -- Sin golpes un rato (fin del combate, sin objetivo): se esconde
@@ -833,8 +907,10 @@ local function CreateAnchor()
     TruncateCountdown(anchor.demo.cooldown)
     anchor.demo:SetPoint("LEFT", anchor, "LEFT", 0, 0)
     anchor.demo.texture:SetTexture(C_Spell.GetSpellTexture(DEMO_SEAL))
+    AddExpireGlow(anchor.demo)
     anchor.demo.cooldown:SetScript("OnCooldownDone", function(self)
-        self:SetCooldown(GetTime(), DEFAULT_DURATION)
+        anchor.demo.startAt = GetTime()
+        self:SetCooldown(anchor.demo.startAt, DEFAULT_DURATION)
     end)
     anchor.demo:Hide()
 
@@ -870,6 +946,15 @@ local function CreateOptions()
         ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks,
         SetPreview = SetPreview, GetOffset = GetOffset, SetOffset = SetOffset,
         ResetPositions = ResetPositions,
+        -- Vista previa del aviso en la pagina Aviso: un sello de muestra grande
+        CreateAlertPreview = function(parent, size)
+            local icon = BuildIcon(parent, size, 24)
+            TruncateCountdown(icon.cooldown)
+            icon.texture:SetTexture(C_Spell.GetSpellTexture(DEMO_SEAL))
+            AddExpireGlow(icon, size)
+            return icon
+        end,
+        UpdateExpireGlow = UpdateExpireGlow,
     })
 
     SLASH_SEALTIMERSFOREVER1 = "/stf"

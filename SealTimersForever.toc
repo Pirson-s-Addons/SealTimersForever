@@ -1,5 +1,5 @@
 ## Interface: 16001
-## Version: 1.05
+## Version: 1.06
 ## Author: Pirson
 ## IconTexture: Interface\AddOns\SealTimersForever\img\logo_stf
 ## Title: |cffd597ffSeal Timers Forever|r

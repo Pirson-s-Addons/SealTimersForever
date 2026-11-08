@@ -5,7 +5,7 @@ local L = ns.L
 -- OPCIONES
 -- ==========================================
 -- Raiz "Acerca de" (UI/About.lua) y, colgando de ella, "General" con los
--- ajustes y "Posicion" para colocar cada cosa al pixel (como DR Tracker
+-- ajustes, "Aviso" (brillo al acabarse el sello) y "Posicion" para colocar cada cosa al pixel (como DR Tracker
 -- Forever): paneles propios con la plantilla de todos los addons de Pirson
 -- (titulo, logo con version, secciones en morado y "Valores por defecto").
 
@@ -14,6 +14,8 @@ local LOGO = "Interface\\AddOns\\SealTimersForever\\img\\logo_stf"
 local X = 16
 -- Lo que devuelve "Valores por defecto": los ajustes del panel, no la posicion
 local PANEL_KEYS = { "locked", "scale", "twistEnabled", "swingBar", "twistGlow", "twistWindow", "twistSound", "hitIcon" }
+-- Los de la pagina Aviso
+local ALERT_KEYS = { "expireGlow", "expireStyle", "expireTime", "expireIntensity" }
 
 local function AddTooltip(widget, text)
     widget:SetScript("OnEnter", function(self)
@@ -75,7 +77,7 @@ function ns.RefreshOptions()
 end
 
 -- api: { db, defaults, ApplyLock, ApplyScale, ApplySwingBar, ApplyHitAnchor, UpdateTicks,
---        SetPreview, GetOffset, SetOffset, ResetPositions }
+--        SetPreview, GetOffset, SetOffset, ResetPositions, CreateAlertPreview, UpdateExpireGlow }
 -- Devuelve la subcategoria General (destino de /stf).
 function ns.CreateOptions(api)
     local db = api.db
@@ -184,6 +186,90 @@ function ns.CreateOptions(api)
     end)
 
     --------------------------------------------------
+    -- AVISO: brillo cuando el sello se acaba, con vista previa en vivo
+    --------------------------------------------------
+    local alert = NewPanel()
+    local alertChildren = {}
+    local function UpdateAlertChildren()
+        for _, widget in ipairs(alertChildren) do
+            widget:SetEnabled(db.expireGlow)
+            widget:SetAlpha(db.expireGlow and 1 or 0.5)
+        end
+    end
+    Header(alert, -56, L.ALERT_HEADER)
+    Checkbox(alert, "expireGlow", L.EXPIRE_GLOW, L.EXPIRE_GLOW_TOOLTIP, X, -81, UpdateAlertChildren)
+
+    local styles = {
+        { "pulse", L.ALERT_PULSE }, { "steady", L.ALERT_STEADY },
+        { "flash", L.ALERT_FLASH }, { "proc", L.ALERT_PROC },
+    }
+    local styleLabel = alert:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    styleLabel:SetPoint("TOPLEFT", cx, -122)
+    styleLabel:SetText(L.ALERT_STYLE)
+    local style = CreateFrame("Frame", "SealTimersForever_expireStyle", alert, "UIDropDownMenuTemplate")
+    style:SetPoint("LEFT", styleLabel, "RIGHT", 0, -2)
+    UIDropDownMenu_SetWidth(style, 200)
+    AddTooltip(style, L.ALERT_STYLE_TOOLTIP)
+    local function StyleText()
+        for _, item in ipairs(styles) do
+            if item[1] == db.expireStyle then return item[2] end
+        end
+    end
+    UIDropDownMenu_Initialize(style, function()
+        for _, item in ipairs(styles) do
+            local info = UIDropDownMenu_CreateInfo()
+            info.text = item[2]
+            info.checked = db.expireStyle == item[1]
+            info.func = function()
+                db.expireStyle = item[1]
+                UIDropDownMenu_SetText(style, item[2])
+            end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    style.Refresh = function(self) UIDropDownMenu_SetText(self, StyleText()) end
+    style.SetEnabled = function(self, on)
+        if on then UIDropDownMenu_EnableDropDown(self) else UIDropDownMenu_DisableDropDown(self) end
+    end
+    widgets[#widgets + 1] = style
+    alertChildren[1] = style
+    alertChildren[2] = Slider(alert, "expireTime", L.EXPIRE_TIME, L.EXPIRE_TIME_TOOLTIP, cx, -175, 1, 15, 1,
+        function(value) return string.format("%d s", value) end)
+    alertChildren[3] = Slider(alert, "expireIntensity", L.ALERT_INTENSITY, L.ALERT_INTENSITY_TOOLTIP, cx, -225, 0.25, 1, 0.05,
+        function(value) return string.format("%d%%", math.floor(value * 100 + 0.5)) end)
+
+    -- Vista previa: un sello que cuenta el umbral + 2 s en bucle, para ver
+    -- como entra el aviso con el tipo y la intensidad elegidos
+    local previewLabel = alert:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    previewLabel:SetPoint("TOPLEFT", 490, -160)
+    previewLabel:SetText(L.PREVIEW)
+    local preview = api.CreateAlertPreview(alert, 56)
+    preview:SetPoint("TOP", previewLabel, "BOTTOM", 0, -22)
+    local previewStart, previewLength = 0, 0
+    alert:SetScript("OnUpdate", function()
+        local now = GetTime()
+        if now >= previewStart + previewLength then
+            previewStart, previewLength = now, db.expireTime + 2
+            preview.cooldown:SetCooldown(previewStart, previewLength)
+        end
+        api.UpdateExpireGlow(preview, previewStart + previewLength, now)
+    end)
+    Separator(alert, -275)
+
+    alert:SetScript("OnShow", function()
+        previewLength = 0 -- la vista previa empieza de cero al abrir
+        Refresh()
+        UpdateAlertChildren()
+    end)
+
+    ResetButton(alert, -295, function()
+        for _, key in ipairs(ALERT_KEYS) do db[key] = api.defaults[key] end
+        previewLength = 0
+        Refresh()
+        UpdateAlertChildren()
+    end)
+
+    --------------------------------------------------
     -- POSICION: elegir que mover y moverlo al pixel, viendo la muestra
     --------------------------------------------------
     local position = NewPanel()
@@ -264,6 +350,7 @@ function ns.CreateOptions(api)
         },
     })
     local category = Settings.RegisterCanvasLayoutSubcategory(root, panel, L.GENERAL_HEADER)
+    Settings.RegisterCanvasLayoutSubcategory(root, alert, L.ALERT_HEADER)
     Settings.RegisterCanvasLayoutSubcategory(root, position, L.POSITION_HEADER)
     return category
 end
