@@ -43,6 +43,7 @@ Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de R
 - **Relanzar** un sello reinicia su tiempo; **cambiar** de sello sustituye el icono (en Forever solo hay un sello activo).
 - Detecta todos los sellos de tu libro de hechizos, incluidos los nuevos de Forever como el **Sello de Furia**.
 - **Aviso al acabarse**: el icono se ilumina en los últimos segundos del sello (5 s por defecto) para que lo renueves a tiempo. Eliges el tipo de aviso (brillo rojo que late, brillo rojo fijo, icono que parpadea o el destello de Blizzard), su intensidad y cuándo empieza, con vista previa en vivo.
+- **Borde**: borde opcional alrededor de los iconos, con su grosor (1–6 px) y su color.
 - Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %.
 - Solo se activa en paladines. Ligero, sin librerías. Los ajustes están en el panel del propio juego: **Opciones → AddOns**.
 
@@ -56,7 +57,7 @@ Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc
 
 ## Uso
 
-- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, una pestaña **Aviso** para el aviso al acabarse y una pestaña **Posición** con deslizadores y muestra en vivo.
+- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, una pestaña **Aviso** para el aviso al acabarse, una pestaña **Borde** y una pestaña **Posición** con deslizadores y muestra en vivo.
 - `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
 - `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
 - `/stf reset` borra las duraciones de sellos aprendidas.

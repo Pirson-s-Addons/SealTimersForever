@@ -5,7 +5,7 @@ local L = ns.L
 -- OPCIONES
 -- ==========================================
 -- Raiz "Acerca de" (UI/About.lua) y, colgando de ella, "General" con los
--- ajustes, "Aviso" (brillo al acabarse el sello) y "Posicion" para colocar cada cosa al pixel (como DR Tracker
+-- ajustes, "Aviso" (brillo al acabarse el sello), "Borde" y "Posicion" para colocar cada cosa al pixel (como DR Tracker
 -- Forever): paneles propios con la plantilla de todos los addons de Pirson
 -- (titulo, logo con version, secciones en morado y "Valores por defecto").
 
@@ -16,6 +16,8 @@ local X = 16
 local PANEL_KEYS = { "locked", "scale", "twistEnabled", "swingBar", "twistGlow", "twistWindow", "twistSound", "hitIcon" }
 -- Los de la pagina Aviso
 local ALERT_KEYS = { "expireGlow", "expireStyle", "expireTime", "expireIntensity" }
+-- Los de la pagina Borde
+local BORDER_KEYS = { "border", "borderSize", "borderColor" }
 
 local function AddTooltip(widget, text)
     widget:SetScript("OnEnter", function(self)
@@ -77,7 +79,7 @@ function ns.RefreshOptions()
 end
 
 -- api: { db, defaults, ApplyLock, ApplyScale, ApplySwingBar, ApplyHitAnchor, UpdateTicks,
---        SetPreview, GetOffset, SetOffset, ResetPositions, CreateAlertPreview, UpdateExpireGlow }
+--        SetPreview, GetOffset, SetOffset, ResetPositions, CreatePreview, UpdateExpireGlow, ApplyBorders }
 -- Devuelve la subcategoria General (destino de /stf).
 function ns.CreateOptions(api)
     local db = api.db
@@ -243,7 +245,7 @@ function ns.CreateOptions(api)
     local previewLabel = alert:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     previewLabel:SetPoint("TOPLEFT", 490, -160)
     previewLabel:SetText(L.PREVIEW)
-    local preview = api.CreateAlertPreview(alert, 56)
+    local preview = api.CreatePreview(alert, 56)
     preview:SetPoint("TOP", previewLabel, "BOTTOM", 0, -22)
     local previewStart, previewLength = 0, 0
     alert:SetScript("OnUpdate", function()
@@ -267,6 +269,78 @@ function ns.CreateOptions(api)
         previewLength = 0
         Refresh()
         UpdateAlertChildren()
+    end)
+
+    --------------------------------------------------
+    -- BORDE: grosor y color del marco de todos los iconos, con vista previa
+    --------------------------------------------------
+    local borderPanel = NewPanel()
+    local borderChildren = {}
+    local function UpdateBorderChildren()
+        for _, widget in ipairs(borderChildren) do
+            widget:SetEnabled(db.border)
+            widget:SetAlpha(db.border and 1 or 0.5)
+        end
+    end
+    Header(borderPanel, -56, L.BORDER_HEADER)
+    Checkbox(borderPanel, "border", L.BORDER, L.BORDER_TOOLTIP, X, -81, function()
+        api.ApplyBorders()
+        UpdateBorderChildren()
+    end)
+    borderChildren[1] = Slider(borderPanel, "borderSize", L.BORDER_SIZE, L.BORDER_SIZE_TOOLTIP, cx, -135, 1, 6, 1,
+        function(value) return string.format("%d px", value) end, api.ApplyBorders)
+
+    -- Muestra del color; al pulsarla, el selector de color del juego
+    local swatch = CreateFrame("Button", "SealTimersForever_borderColor", borderPanel)
+    swatch:SetSize(22, 22)
+    swatch:SetPoint("TOPLEFT", cx + 4, -175)
+    local swatchEdge = swatch:CreateTexture(nil, "BACKGROUND")
+    swatchEdge:SetAllPoints()
+    swatchEdge:SetColorTexture(1, 1, 1)
+    local swatchColor = swatch:CreateTexture(nil, "ARTWORK")
+    swatchColor:SetPoint("TOPLEFT", 2, -2)
+    swatchColor:SetPoint("BOTTOMRIGHT", -2, 2)
+    local swatchLabel = swatch:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
+    swatchLabel:SetPoint("LEFT", swatch, "RIGHT", 8, 0)
+    swatchLabel:SetText(L.BORDER_COLOR)
+    swatch.Refresh = function()
+        local c = db.borderColor
+        swatchColor:SetColorTexture(c.r, c.g, c.b)
+    end
+    local function SetColor(r, g, b)
+        db.borderColor = { r = r, g = g, b = b } -- tabla nueva: la por defecto no se toca
+        swatch:Refresh()
+        api.ApplyBorders()
+    end
+    swatch:SetScript("OnClick", function()
+        local c = db.borderColor
+        ColorPickerFrame:SetupColorPickerAndShow({
+            r = c.r, g = c.g, b = c.b,
+            swatchFunc = function() SetColor(ColorPickerFrame:GetColorRGB()) end,
+            cancelFunc = function(previous) SetColor(previous.r, previous.g, previous.b) end,
+        })
+    end)
+    AddTooltip(swatch, L.BORDER_COLOR_TOOLTIP)
+    widgets[#widgets + 1] = swatch
+    borderChildren[2] = swatch
+
+    local borderPreviewLabel = borderPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    borderPreviewLabel:SetPoint("TOPLEFT", 490, -100)
+    borderPreviewLabel:SetText(L.PREVIEW)
+    local borderPreview = api.CreatePreview(borderPanel, 56)
+    borderPreview:SetPoint("TOP", borderPreviewLabel, "BOTTOM", 0, -22)
+    Separator(borderPanel, -215)
+
+    borderPanel:SetScript("OnShow", function()
+        Refresh()
+        UpdateBorderChildren()
+    end)
+
+    ResetButton(borderPanel, -235, function()
+        for _, key in ipairs(BORDER_KEYS) do db[key] = api.defaults[key] end
+        api.ApplyBorders()
+        Refresh()
+        UpdateBorderChildren()
     end)
 
     --------------------------------------------------
@@ -351,6 +425,7 @@ function ns.CreateOptions(api)
     })
     local category = Settings.RegisterCanvasLayoutSubcategory(root, panel, L.GENERAL_HEADER)
     Settings.RegisterCanvasLayoutSubcategory(root, alert, L.ALERT_HEADER)
+    Settings.RegisterCanvasLayoutSubcategory(root, borderPanel, L.BORDER_HEADER)
     Settings.RegisterCanvasLayoutSubcategory(root, position, L.POSITION_HEADER)
     return category
 end

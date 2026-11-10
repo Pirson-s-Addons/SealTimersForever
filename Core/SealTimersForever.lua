@@ -67,6 +67,9 @@ local DEFAULTS = {
     locked = true, scale = 1, point = "CENTER", x = 0, y = -150,
     -- Brillo cuando al sello le quedan expireTime s o menos (como el WeakAura)
     expireGlow = true, expireTime = 5, expireStyle = "pulse", expireIntensity = 1,
+    -- Borde de los iconos (pedido en CurseForge). El color se sustituye entero, nunca
+    -- se modifica en sitio: db.borderColor puede ser esta misma tabla.
+    border = false, borderSize = 2, borderColor = { r = 0, g = 0, b = 0 },
     twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
     -- Icono en cada golpe: donde lo tenia el WeakAura (encima del objetivo)
     hitIcon = true, hitPoint = "CENTER", hitX = 60, hitY = 175,
@@ -270,10 +273,27 @@ local function UpdateExpireGlow(icon, endsAt, now)
     SetExpireAlert(icon, db.expireGlow and left and left > 0 and left <= db.expireTime, now)
 end
 
+-- Borde: un color solido detras del icono que asoma borderSize px por cada lado
+local allIcons = {}
+local function ApplyBorder(icon)
+    local border, size, c = icon.border, db.borderSize, db.borderColor
+    border:SetShown(db.border)
+    border:SetColorTexture(c.r, c.g, c.b)
+    border:ClearAllPoints()
+    border:SetPoint("TOPLEFT", -size, size)
+    border:SetPoint("BOTTOMRIGHT", size, -size)
+end
+local function ApplyBorders()
+    for _, icon in ipairs(allIcons) do ApplyBorder(icon) end
+end
+
 -- Icono con cuenta atras grande y amarilla, como la de OmniCC en los WeakAuras
 local function BuildIcon(parent, size, fontSize)
     local icon = CreateFrame("Frame", nil, parent)
     icon:SetSize(size, size)
+    icon.border = icon:CreateTexture(nil, "BACKGROUND")
+    allIcons[#allIcons + 1] = icon
+    ApplyBorder(icon)
     icon.texture = icon:CreateTexture(nil, "ARTWORK")
     icon.texture:SetAllPoints()
     icon.texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
@@ -946,8 +966,9 @@ local function CreateOptions()
         ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks,
         SetPreview = SetPreview, GetOffset = GetOffset, SetOffset = SetOffset,
         ResetPositions = ResetPositions,
-        -- Vista previa del aviso en la pagina Aviso: un sello de muestra grande
-        CreateAlertPreview = function(parent, size)
+        ApplyBorders = ApplyBorders,
+        -- Vista previa de las paginas Aviso y Borde: un sello de muestra grande
+        CreatePreview = function(parent, size)
             local icon = BuildIcon(parent, size, 24)
             TruncateCountdown(icon.cooldown)
             icon.texture:SetTexture(C_Spell.GetSpellTexture(DEMO_SEAL))

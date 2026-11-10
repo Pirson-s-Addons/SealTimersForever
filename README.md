@@ -43,6 +43,7 @@ It works with **every seal in WoW Forever**: Seal of Fury, Command, Righteousnes
 - **Recasting** a seal restarts its timer; **switching** seals replaces the icon (only one seal is active in Forever).
 - Detects every seal in your spellbook, including new Forever seals like **Seal of Fury**.
 - **Running-out alert**: the icon lights up in the last seconds of the seal (5 s by default) so you recast it in time. Pick the alert type (pulsing red glow, steady red glow, flashing icon or Blizzard's proc glow), its intensity and when it starts, with a live preview.
+- **Border**: optional border around the icons, with its thickness (1–6 px) and colour.
 - **Movable** anywhere on the screen and **resizable** from 50% to 300%.
 - Only runs for paladins. Lightweight, no libraries. Settings live in the game's own **Options → AddOns** panel.
 
@@ -56,7 +57,7 @@ It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`
 
 ## Usage
 
-- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, an **Alert** tab for the running-out alert and a **Position** tab with sliders and a live preview.
+- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, an **Alert** tab for the running-out alert, a **Border** tab and a **Position** tab with sliders and a live preview.
 - `/stf check` lists the seals in your spellbook and how each one is tracked in combat.
 - `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
 - `/stf reset` clears the learned seal durations.
