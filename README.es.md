@@ -62,6 +62,24 @@ Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc
 - `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
 - `/stf reset` borra las duraciones de sellos aprendidas.
 
+## API para autores de addons
+
+De solo lectura y con versión. Añade `## OptionalDeps: SealTimersForever` a tu TOC.
+
+```lua
+local api = SealTimersForeverAPI
+if api and api.version == 1 then
+    local seal = api.GetActiveSeal() -- { name, texture, castAt, duration, expiresAt, canTwist } o nil
+    if seal and seal.expiresAt then
+        print(seal.name, seal.expiresAt - GetTime()) -- segundos que le quedan
+    end
+    api.GetKnownSeals()              -- { { spellID, name }, ... }
+    api.IsSeal("Sello de orden")     -- true (idioma del cliente)
+end
+```
+
+`expiresAt` (en tiempo de `GetTime()`) solo se da cuando se vio el lanzamiento. Tras un `/reload` el tiempo sale del aura, que Forever puede mantener secreta, así que va a `nil` aunque el icono lo pinte.
+
 ## Notas
 
 En WoW Forever los datos de las auras son **secretos** para los addons en combate, así que el addon no puede leer sin más el bufo del sello. En su lugar sigue **tus propios lanzamientos de sello**, que nunca son secretos, y cuenta la duración del sello (30 s en Forever) desde que lo lanzas. Cuando el juego deja leer la duración real del aura, se usa esa.

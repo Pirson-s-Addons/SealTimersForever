@@ -1052,3 +1052,52 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         ScanSpellBook()
     end
 end)
+
+--------------------------------------------------
+-- API PUBLICA (solo lectura)
+--------------------------------------------------
+-- Para otros addons (p. ej. Rotation Guide, para saber cuando renovar el
+-- sello): el sello activo y cuando se acaba. Va aqui y no en su fichero porque
+-- el estado (activeSeal, icons) es local de este.
+--
+-- expiresAt es en tiempo de GetTime() y solo se da cuando se conoce de verdad:
+-- desde un lanzamiento visto. Si el tiempo sale del aura (tras /reload) puede
+-- ser secreto, y entonces va a nil aunque el icono lo pinte.
+--
+-- version solo sube si cambia el significado de algo ya existente; anadir
+-- funciones o campos no la sube.
+--
+--   local api = SealTimersForeverAPI
+--   local seal = api and api.version == 1 and api.GetActiveSeal()
+--   if seal and seal.expiresAt then print(seal.name, seal.expiresAt - GetTime()) end
+
+SealTimersForeverAPI = {
+    version = 1,
+
+    -- { name, texture, castAt, duration, expiresAt, canTwist } o nil sin sello.
+    -- castAt / expiresAt: nil si no se vio el lanzamiento (tras /reload).
+    GetActiveSeal = function()
+        local name = activeSeal
+        local icon = name and icons[name]
+        if not icon then return nil end
+        local duration = SealDuration(name)
+        return {
+            name = name, texture = sealTextures[name], castAt = icon.castAt, duration = duration,
+            expiresAt = icon.castAt and icon.castAt + duration or nil,
+            canTwist = HasEcho(name),
+        }
+    end,
+
+    -- Sellos que conoce el jugador: { { spellID, name }, ... }
+    GetKnownSeals = function()
+        local out = {}
+        for spellID, name in pairs(knownSeals) do out[#out + 1] = { spellID = spellID, name = name } end
+        table.sort(out, function(a, b) return a.name < b.name end)
+        return out
+    end,
+
+    -- Si un nombre de hechizo o aura es un sello (en el idioma del cliente)
+    IsSeal = function(name)
+        return type(name) == "string" and IsSeal(name) or false
+    end,
+}

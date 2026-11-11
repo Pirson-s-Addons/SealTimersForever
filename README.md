@@ -62,6 +62,24 @@ It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`
 - `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
 - `/stf reset` clears the learned seal durations.
 
+## API for addon authors
+
+Read-only and versioned. Add `## OptionalDeps: SealTimersForever` to your TOC.
+
+```lua
+local api = SealTimersForeverAPI
+if api and api.version == 1 then
+    local seal = api.GetActiveSeal() -- { name, texture, castAt, duration, expiresAt, canTwist } or nil
+    if seal and seal.expiresAt then
+        print(seal.name, seal.expiresAt - GetTime()) -- seconds left
+    end
+    api.GetKnownSeals()              -- { { spellID, name }, ... }
+    api.IsSeal("Seal of Command")    -- true (client language)
+end
+```
+
+`expiresAt` (in `GetTime()` time) is only given when the cast was seen. After a `/reload` the time comes from the aura, which Forever may keep secret, so it is `nil` even though the icon shows it.
+
 ## Notes
 
 In WoW Forever, aura data is **secret** to addons during combat, so the addon cannot simply read the seal's buff. Instead it tracks **your own seal casts**, which are never secret, and counts the seal's duration (30 s in Forever) from the moment you cast it. When the game lets the addon read the real aura duration, that one is used.
