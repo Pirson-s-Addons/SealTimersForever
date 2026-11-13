@@ -27,8 +27,10 @@
 -- zona de twist al final. PLAYER_SWING (C_SwingTimer) no es secreto, asi que
 -- funciona en combate. En Forever el twist va con el "Eco": solo Orden,
 -- Rectitud, Furia y Justicia lo dejan. El registro de combate si esta
--- restringido, asi que el acierto del twist se deduce (cambio de sello con Eco
--- entre dos golpes), no se lee del dano.
+-- restringido (y UNIT_COMBAT llega secreto en combate), asi que el twist y el
+-- Eco se deducen de los lanzamientos y los golpes. Lo unico que dice que un
+-- sello ha hecho dano es su efecto: un UNIT_SPELLCAST_SUCCEEDED del jugador con
+-- el nombre del sello y otro ID (el del Sello de Orden), que no es secreto.
 -- Contrastado con Gethe/wow-ui-source, rama "forever".
 
 local _, ns = ...
@@ -44,8 +46,10 @@ local SEAL_SPELLS = { 21084, 21082, 20165, 20166, 20164, 20375 }
 -- los nuevos como el Sello de Furia, se pueden twistear.
 local NO_ECHO_SPELLS = { 21082, 20165, 20166 }
 -- Ecos del talento Twist of Light (Furia, Orden, Rectitud, Justicia): auras
--- propias sin duracion que consume el siguiente golpe. Solo para /stf debug.
+-- propias sin duracion que consume el siguiente golpe.
 local ECHO_SPELLS = { 1311701, 1311703, 1311704, 1311705 }
+-- Talento final de Reprension (Twist of Light): sin el no hay Ecos
+local TWIST_TALENT = 1310735
 -- Muestra para colocar las cosas: Rectitud en el bloque; Rectitud y Orden
 -- (golpe con twist) en el icono de golpe
 local DEMO_SEAL, DEMO_HITS = 21084, { 21084, 20375 }
@@ -73,6 +77,8 @@ local DEFAULTS = {
     twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
     -- Icono en cada golpe: donde lo tenia el WeakAura (encima del objetivo)
     hitIcon = true, hitPoint = "CENTER", hitX = 60, hitY = 175,
+    -- Icono del Eco de Twist of Light en el bloque, mientras dure (pedido en CurseForge)
+    echoIcon = true,
 }
 -- Barra de golpe como la del WeakAura de Kaedin: encima del sello, amarilla
 -- sobre azul oscuro, con el tiempo que queda en el centro y dos lineas.
@@ -84,6 +90,9 @@ local GCD = 1.5
 -- Cuanto se ve el icono de cada golpe (como el WeakAura: 1,5 s)
 local HIT_DURATION = 1.5
 local HIT_SIZE = 36
+-- El efecto de un sello (y el de su Eco) llega pegado al golpe: lo que caiga
+-- en este margen va junto en los iconos de golpe.
+local HIT_GROUP = 0.5
 local MAIN_HAND = Enum.PlayerSwingType and Enum.PlayerSwingType.MainHand or 0
 -- Sube cuando cambia como se aprenden las duraciones: las viejas se descartan
 -- (la 1: las antiguas podian ser la de un eco, mucho mas corta).
@@ -102,7 +111,9 @@ local swingBar
 local hitAnchor, hitIcons = nil, {}
 local sealTextures = {}        -- nombre del sello -> ultima textura vista
 local debugMode = false
-local echoNames, echoIDs = {}, {}  -- /stf debug: nombre de cada Eco; auraInstanceID -> nombre
+local echoNames, echoIDs = {}, {}  -- nombre de cada Eco; /stf debug: auraInstanceID -> nombre
+local echoTex                  -- textura del Eco pendiente (de su aura o deducido), o nil
+local echoIcon                 -- su icono en el bloque
 local previewing = false       -- pestana Posicion abierta: se ve la muestra
 local anchor
 
@@ -190,6 +201,16 @@ local function HasEcho(name)
     return name ~= nil and not noEcho[name]
 end
 
+local function SealTexture(name)
+    return sealTextures[name] or "Interface\\Icons\\INV_Misc_QuestionMark"
+end
+
+-- Twist of Light aprendido. Sin la funcion (cliente raro) se da por bueno.
+local function HasTwistTalent()
+    if not C_SpellBook.IsSpellKnown then return true end
+    return C_SpellBook.IsSpellKnown(TWIST_TALENT) == true
+end
+
 -- Solo por ID, nunca por nombre: el dano del Sello de Orden (y otros efectos
 -- del sello) se llama igual que el sello y tambien lanza UNIT_SPELLCAST_SUCCEEDED,
 -- asi que por nombre cada golpe con efecto reiniciaba el contador.
@@ -197,6 +218,17 @@ local function SealNameForSpell(spellID)
     if not Readable(spellID) then return nil end
     if knownSeals[spellID] then return knownSeals[spellID] end
     if tContains(SEAL_SPELLS, spellID) then return C_Spell.GetSpellName(spellID) end
+    return nil
+end
+
+-- El EFECTO de un sello al golpear: otro ID con el nombre del sello (el dano
+-- del Sello de Orden) o con el de un Eco. UNIT_SPELLCAST_SUCCEEDED del jugador
+-- no es secreto, asi que dice cuando salta de verdad (el registro de combate y
+-- UNIT_COMBAT si lo son: medido en la beta).
+local function SealEffectName(spellID)
+    if not Readable(spellID) or SealNameForSpell(spellID) then return nil end
+    local name = C_Spell.GetSpellName(spellID)
+    if name and (IsSeal(name) or echoNames[name]) then return name end
     return nil
 end
 
@@ -354,6 +386,12 @@ Layout = function()
         icon:SetPoint("LEFT", anchor, "LEFT", (i - 1) * (ICON_SIZE + SPACING), 0)
     end
     UpdateSealDemo()
+    -- El Eco, a la derecha de los sellos (o del sello de muestra)
+    if echoIcon then
+        local slots = math.max(#order, anchor.demo:IsShown() and 1 or 0)
+        echoIcon:ClearAllPoints()
+        echoIcon:SetPoint("LEFT", anchor, "LEFT", slots * (ICON_SIZE + SPACING), 0)
+    end
 end
 
 local function ShowSeal(name, texture)
@@ -571,7 +609,9 @@ end
 local function DebugUnitCombat(action, amount, school)
     if not debugMode then return end
     if IsSecret(action) or IsSecret(amount) or IsSecret(school) then
-        Debug("objetivo: UNIT_COMBAT secreto")
+        -- Aunque sea secreto, cuantos llegan y cuando dice algo: un golpe con
+        -- sello deberia traer dos (arma + Sagrado) casi a la vez.
+        Debug("objetivo: UNIT_COMBAT secreto, " .. (swingStart and ("%.2f s tras tu golpe"):format(GetTime() - swingStart) or "sin golpe"))
         return
     end
     local since = swingStart and ("%.2f s tras tu golpe"):format(GetTime() - swingStart) or "sin golpe"
@@ -579,7 +619,29 @@ local function DebugUnitCombat(action, amount, school)
         tostring(school), school == HOLY and " (Sagrado)" or "", since))
 end
 
+local ApplyEcho
+
+-- Las auras de los Ecos no son secretas (medido en la beta): se leen por su ID
+-- tambien en combate y mandan sobre lo deducido. Si no se pueden leer, se
+-- queda lo deducido de los lanzamientos y los golpes.
+local function ScanEchoes()
+    local found
+    for _, spellID in ipairs(ECHO_SPELLS) do
+        local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
+        if not ok or IsSecret(aura) then return end
+        if aura and not found then
+            found = Readable(aura.icon) and aura.icon or C_Spell.GetSpellTexture(spellID)
+            Debug("eco activo: " .. (C_Spell.GetSpellName(spellID) or spellID))
+        end
+    end
+    if found ~= echoTex then
+        echoTex = found
+        ApplyEcho()
+    end
+end
+
 local function OnUnitAura(info)
+    if echoIcon then ScanEchoes() end
     if not Readable(info) then
         Debug("UNIT_AURA sin datos legibles")
         RefreshTracked()
@@ -619,6 +681,13 @@ local function OnSealCast(spellID)
     local name = SealNameForSpell(spellID)
     if not name then return end
     Debug(("lanzado %s (%s)"):format(name, tostring(spellID)))
+    -- Twist of Light: sustituir un sello con Eco deja su Eco hasta el siguiente
+    -- golpe. Se deduce del lanzamiento (no es secreto); el aura puede serlo.
+    local previous = activeSeal
+    if previous and previous ~= name and HasEcho(previous) and HasTwistTalent() then
+        echoTex = SealTexture(previous)
+        ApplyEcho()
+    end
     activeSeal = name
     local icon = ShowSeal(name, C_Spell.GetSpellTexture(spellID))
     icon.castAt = GetTime()
@@ -763,12 +832,23 @@ local function CreateHitIcon(index)
     return hit
 end
 
-local function ShowHits(names)
+-- Lo que salta en un mismo golpe (sello, su efecto, el Eco) se junta: hasta
+-- dos iconos, sin repetir.
+local hitTextures, hitAt = {}, nil
+local function AddHit(texture)
+    if not (db.twistEnabled and db.hitIcon) then return end
+    local now = GetTime()
+    if not hitAt or now - hitAt > HIT_GROUP then
+        wipe(hitTextures)
+        hitAt = now
+    end
+    if tContains(hitTextures, texture) or #hitTextures >= #hitIcons then return end
+    hitTextures[#hitTextures + 1] = texture
     for i = 1, #hitIcons do hitIcons[i]:Hide() end
-    for i, name in ipairs(names) do
+    for i, tex in ipairs(hitTextures) do
         local hit = hitIcons[i]
-        hit.texture:SetTexture(sealTextures[name] or "Interface\\Icons\\INV_Misc_QuestionMark")
-        hit.cooldown:SetCooldown(GetTime(), HIT_DURATION)
+        hit.texture:SetTexture(tex)
+        hit.cooldown:SetCooldown(hitAt, HIT_DURATION)
         hit:Show()
     end
 end
@@ -816,21 +896,64 @@ end
 
 local function OnSwing(duration, swingType)
     if swingType ~= MAIN_HAND or not Readable(duration) or duration <= 0 then return end
+    Debug(("golpe (%.1f s)"):format(duration))
     -- Twist acertado: entre el golpe anterior y este se cambio desde un sello
     -- con Eco, asi que este golpe aplica el sello anterior ademas del nuevo.
     local twisted = sealAtLastSwing and activeSeal and activeSeal ~= sealAtLastSwing
-        and HasEcho(sealAtLastSwing)
+        and HasEcho(sealAtLastSwing) and HasTwistTalent()
     if twisted then
         Debug(("twist: %s -> %s"):format(sealAtLastSwing, activeSeal))
         if db.twistEnabled and db.twistSound then PlaySound(SOUNDKIT.MAP_PING) end
     end
-    if db.twistEnabled and db.hitIcon and activeSeal then
-        ShowHits(twisted and { activeSeal, sealAtLastSwing } or { activeSeal })
+    -- Un sello cuyo efecto ya se ha visto (Orden: salta por probabilidad) solo
+    -- sale cuando salta, con OnSealEffect. El resto, en cada golpe.
+    if activeSeal and not db.effectSeals[activeSeal] then AddHit(SealTexture(activeSeal)) end
+    if twisted and not db.effectSeals[sealAtLastSwing] then AddHit(SealTexture(sealAtLastSwing)) end
+    -- El golpe consume el Eco
+    if echoTex then
+        echoTex = nil
+        ApplyEcho()
     end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
     UpdateTicks()
     ApplySwingBar()
+end
+
+-- El efecto de un sello ha saltado de verdad: su icono de golpe. El sello queda
+-- marcado (db.effectSeals) y desde entonces solo sale cuando salta.
+local function SinceSwing()
+    return swingStart and ("%.2f s tras tu golpe"):format(GetTime() - swingStart) or "sin golpe"
+end
+
+local function OnSealEffect(spellID)
+    local name = SealEffectName(spellID)
+    if debugMode and not name and Readable(spellID) and not SealNameForSpell(spellID) then
+        Debug(("hechizo %s (%d), %s"):format(C_Spell.GetSpellName(spellID) or "?", spellID, SinceSwing()))
+    end
+    if not name then return end
+    Debug(("efecto de %s (%d), %s"):format(name, spellID, SinceSwing()))
+    db.effectSeals[name] = true
+    AddHit(sealTextures[name] or C_Spell.GetSpellTexture(spellID))
+end
+
+-- Icono del Eco en el bloque, a la derecha del sello, mientras exista. Con la
+-- muestra (pestana Posicion o desbloqueado) se ve uno de Orden.
+ApplyEcho = function()
+    local show = db.twistEnabled and db.echoIcon and (echoTex ~= nil or Demo())
+    if show then
+        echoIcon.texture:SetTexture(echoTex or C_Spell.GetSpellTexture(DEMO_HITS[2]))
+    end
+    echoIcon:SetShown(show)
+    Layout()
+end
+
+local function CreateEchoIcon()
+    echoIcon = BuildIcon(anchor, ICON_SIZE, 18)
+    echoIcon.label = echoIcon:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    echoIcon.label:SetPoint("BOTTOM", echoIcon, "BOTTOM", 0, 2)
+    echoIcon.label:SetText(BRAND .. L.ECHO .. "|r")
+    echoIcon:Hide()
 end
 
 --------------------------------------------------
@@ -845,6 +968,7 @@ local function ApplyLock()
     UpdateSealDemo()
     if swingBar then ApplySwingBar() end
     if hitAnchor then ApplyHitAnchor() end
+    if echoIcon then ApplyEcho() end
 end
 
 local function SetPreview(on)
@@ -963,7 +1087,7 @@ local function CreateOptions()
     local category = ns.CreateOptions({
         db = db, defaults = DEFAULTS,
         ApplyLock = ApplyLock, ApplyScale = ApplyScale, ApplySwingBar = ApplySwingBar,
-        ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks,
+        ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks, ApplyEcho = ApplyEcho,
         SetPreview = SetPreview, GetOffset = GetOffset, SetOffset = SetOffset,
         ResetPositions = ResetPositions,
         ApplyBorders = ApplyBorders,
@@ -986,6 +1110,7 @@ local function CreateOptions()
             debugMode = not debugMode
             print(BRAND .. "Seal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
             -- Si el juego marca los Ecos como secretos en combate
+            Debug("talento Twist of Light: " .. (HasTwistTalent() and "si" or "no"))
             for _, spellID in ipairs(ECHO_SPELLS) do
                 Debug(("eco %s (%d): %s en combate"):format(C_Spell.GetSpellName(spellID) or "?", spellID,
                     C_Secrets.ShouldSpellAuraBeSecret(spellID) and "secreto" or "legible"))
@@ -1021,12 +1146,15 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         if db.durationsVersion ~= DURATIONS_VERSION then
             db.durations, db.durationsVersion = {}, DURATIONS_VERSION
         end
+        db.effectSeals = db.effectSeals or {}
         BuildSealNames()
         ScanSpellBook()
         CreateAnchor()
         CreateSwingBar()
         ApplySwingBar()
         CreateHitAnchor()
+        CreateEchoIcon()
+        ApplyEcho()
         ApplyScale()
         CreateOptions()
         self:RegisterUnitEvent("UNIT_AURA", "player")
@@ -1040,6 +1168,7 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         OnUnitAura(arg2)
     elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         OnSealCast(arg3)
+        OnSealEffect(arg3)
     elseif event == "PLAYER_SWING" then
         OnSwing(arg1, arg2)
     elseif event == "UNIT_COMBAT" then

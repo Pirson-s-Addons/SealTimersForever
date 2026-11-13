@@ -13,7 +13,7 @@ local HEADER = "|cffC47FF3"
 local LOGO = "Interface\\AddOns\\SealTimersForever\\img\\logo_stf"
 local X = 16
 -- Lo que devuelve "Valores por defecto": los ajustes del panel, no la posicion
-local PANEL_KEYS = { "locked", "scale", "twistEnabled", "swingBar", "twistGlow", "twistWindow", "twistSound", "hitIcon" }
+local PANEL_KEYS = { "locked", "scale", "twistEnabled", "swingBar", "twistGlow", "twistWindow", "twistSound", "hitIcon", "echoIcon" }
 -- Los de la pagina Aviso
 local ALERT_KEYS = { "expireGlow", "expireStyle", "expireTime", "expireIntensity" }
 -- Los de la pagina Borde
@@ -160,6 +160,7 @@ function ns.CreateOptions(api)
     Checkbox(panel, "twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, X, -225, function()
         api.ApplySwingBar()
         api.ApplyHitAnchor()
+        api.ApplyEcho()
         UpdateChildren()
     end)
     local cx = X + 20
@@ -169,19 +170,21 @@ function ns.CreateOptions(api)
         function(value) return string.format("%.1f s", value) end, api.UpdateTicks)
     children[#children + 1] = Checkbox(panel, "twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP, cx, -370, nil)
     children[#children + 1] = Checkbox(panel, "hitIcon", L.HIT_ICON, L.HIT_ICON_TOOLTIP, cx, -400, api.ApplyHitAnchor)
-    Separator(panel, -440)
+    children[#children + 1] = Checkbox(panel, "echoIcon", L.ECHO_ICON, L.ECHO_ICON_TOOLTIP, cx, -430, api.ApplyEcho)
+    Separator(panel, -470)
 
     panel:SetScript("OnShow", function()
         Refresh()
         UpdateChildren()
     end)
 
-    ResetButton(panel, -460, function()
+    ResetButton(panel, -490, function()
         for _, key in ipairs(PANEL_KEYS) do db[key] = api.defaults[key] end
         api.ApplyLock()
         api.ApplyScale()
         api.ApplySwingBar()
         api.ApplyHitAnchor()
+        api.ApplyEcho()
         api.UpdateTicks()
         Refresh()
         UpdateChildren()
