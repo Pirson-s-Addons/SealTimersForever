@@ -44,7 +44,7 @@ Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de R
 - Detecta todos los sellos de tu libro de hechizos, incluidos los nuevos de Forever como el **Sello de Furia**.
 - **Aviso al acabarse**: el icono se ilumina en los últimos segundos del sello (5 s por defecto) para que lo renueves a tiempo. Eliges el tipo de aviso (brillo rojo que late, brillo rojo fijo, icono que parpadea o el destello de Blizzard), su intensidad y cuándo empieza, con vista previa en vivo.
 - **Borde**: borde opcional alrededor de los iconos, con su grosor (1–6 px) y su color.
-- Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %.
+- Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %: iconos de sellos, barra de golpe, icono de golpe e icono del Eco, cada uno por separado.
 - Solo se activa en paladines. Ligero, sin librerías. Los ajustes están en el panel del propio juego: **Opciones → AddOns**.
 
 ## Instalación

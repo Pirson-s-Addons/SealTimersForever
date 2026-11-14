@@ -77,8 +77,12 @@ local DEFAULTS = {
     twistEnabled = true, swingBar = true, twistGlow = true, twistWindow = 0.4, twistSound = true,
     -- Icono en cada golpe: donde lo tenia el WeakAura (encima del objetivo)
     hitIcon = true, hitPoint = "CENTER", hitX = 60, hitY = 175,
-    -- Icono del Eco de Twist of Light en el bloque, mientras dure (pedido en CurseForge)
+    -- Icono del Eco de Twist of Light, mientras dure (pedido en CurseForge)
     echoIcon = true,
+    -- Cada elemento se mueve y cambia de tamano por su cuenta (pedido en
+    -- CurseForge). La barra de golpe y el Eco sin posicion guardada (nil) van
+    -- pegados al bloque de sellos, donde estaban antes de la 1.10.
+    swingScale = 1, hitScale = 1, echoScale = 1,
 }
 -- Barra de golpe como la del WeakAura de Kaedin: encima del sello, amarilla
 -- sobre azul oscuro, con el tiempo que queda en el centro y dos lineas.
@@ -113,7 +117,7 @@ local sealTextures = {}        -- nombre del sello -> ultima textura vista
 local debugMode = false
 local echoNames, echoIDs = {}, {}  -- nombre de cada Eco; /stf debug: auraInstanceID -> nombre
 local echoTex                  -- textura del Eco pendiente (de su aura o deducido), o nil
-local echoIcon                 -- su icono en el bloque
+local echoIcon, echoAnchor     -- su icono y el marco que lo mueve
 local previewing = false       -- pestana Posicion abierta: se ve la muestra
 local anchor
 
@@ -386,12 +390,6 @@ Layout = function()
         icon:SetPoint("LEFT", anchor, "LEFT", (i - 1) * (ICON_SIZE + SPACING), 0)
     end
     UpdateSealDemo()
-    -- El Eco, a la derecha de los sellos (o del sello de muestra)
-    if echoIcon then
-        local slots = math.max(#order, anchor.demo:IsShown() and 1 or 0)
-        echoIcon:ClearAllPoints()
-        echoIcon:SetPoint("LEFT", anchor, "LEFT", slots * (ICON_SIZE + SPACING), 0)
-    end
 end
 
 local function ShowSeal(name, texture)
@@ -717,6 +715,67 @@ local function OnSealCast(spellID)
 end
 
 --------------------------------------------------
+-- ELEMENTOS MOVILES
+--------------------------------------------------
+-- Bloque de sellos, barra de golpe, icono de golpe e icono del Eco: cada uno con
+-- su punto y su tamano en la BD. Las posiciones van en la escala del propio
+-- marco, como al arrastrar. "beside": donde va sin posicion guardada.
+local POSITIONS = {
+    seals = { point = "point", x = "x", y = "y", scale = "scale" },
+    swing = { point = "swingPoint", x = "swingX", y = "swingY", scale = "swingScale",
+        beside = function(f) f:SetPoint("BOTTOM", anchor, "TOP", 0, 6) end },
+    hit = { point = "hitPoint", x = "hitX", y = "hitY", scale = "hitScale" },
+    echo = { point = "echoPoint", x = "echoX", y = "echoY", scale = "echoScale",
+        beside = function(f) f:SetPoint("LEFT", anchor, "RIGHT", SPACING, 0) end },
+}
+
+local function Place(pos)
+    local f = pos.frame
+    f:ClearAllPoints()
+    if db[pos.point] then
+        f:SetPoint(db[pos.point], UIParent, db[pos.point], db[pos.x], db[pos.y])
+    else
+        pos.beside(f)
+    end
+end
+
+-- Se arrastra (cuando Demo() le activa el raton) y guarda donde se suelta
+local function MakeMovable(f, what)
+    local pos = POSITIONS[what]
+    pos.frame = f
+    f:SetMovable(true)
+    f:SetClampedToScreen(true)
+    f:RegisterForDrag("LeftButton")
+    f:SetScript("OnDragStart", f.StartMoving)
+    f:SetScript("OnDragStop", function(self)
+        self:StopMovingOrSizing()
+        local point, _, _, x, y = self:GetPoint()
+        db[pos.point], db[pos.x], db[pos.y] = point, x, y
+        if ns.RefreshOptions then ns.RefreshOptions() end
+    end)
+    f:SetScale(db[pos.scale])
+    Place(pos)
+end
+
+-- Fondo violeta y rotulo "<nombre> - Arrastra para mover" mientras se coloca
+local function AddDragHint(f, text, withBg)
+    if withBg then
+        f.bg = f:CreateTexture(nil, "BACKGROUND")
+        f.bg:SetAllPoints()
+        f.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
+    end
+    f.label = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    f.label:SetPoint("BOTTOM", f, "TOP", 0, 2)
+    f.label:SetText(BRAND .. text .. "|r - " .. L.DRAG_HINT)
+end
+
+local function ShowDragHint(f, on)
+    f:EnableMouse(on)
+    if f.bg then f.bg:SetShown(on) end
+    f.label:SetShown(on)
+end
+
+--------------------------------------------------
 -- TEMPORIZADOR DE GOLPE Y TWIST
 --------------------------------------------------
 local function SetGlow(on, pulse)
@@ -780,8 +839,10 @@ end
 
 local function ApplySwingBar()
     -- Al colocarla (Demo) se ensena aunque no haya golpes
-    local show = db.twistEnabled and db.swingBar and (swingStart ~= nil or Demo())
+    local enabled = db.twistEnabled and db.swingBar
+    local show = enabled and (swingStart ~= nil or Demo())
     swingBar:SetShown(show)
+    ShowDragHint(swingBar, enabled and Demo())
     if Demo() and not swingStart then
         swingDuration = swingDuration or 3.5
         UpdateTicks()
@@ -799,9 +860,10 @@ local function Tick(r, g, b)
 end
 
 local function CreateSwingBar()
-    swingBar = CreateFrame("StatusBar", nil, anchor)
+    swingBar = CreateFrame("StatusBar", "SealTimersForeverSwingBar", UIParent)
     swingBar:SetSize(SWING_WIDTH, SWING_HEIGHT)
-    swingBar:SetPoint("BOTTOM", anchor, "TOP", 0, 6)
+    MakeMovable(swingBar, "swing")
+    AddDragHint(swingBar, L.SWING_BAR)
     swingBar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
     swingBar:SetStatusBarColor(0.8, 0.75, 0.05)
     swingBar:SetMinMaxValues(0, 1)
@@ -856,9 +918,7 @@ end
 ApplyHitAnchor = function()
     local enabled = db.twistEnabled and db.hitIcon
     local demo = enabled and Demo()
-    hitAnchor:EnableMouse(demo)
-    hitAnchor.bg:SetShown(demo)
-    hitAnchor.label:SetShown(demo)
+    ShowDragHint(hitAnchor, demo)
     -- Muestra: un golpe con twist (sello activo y su Eco), sin cuenta atras
     for i, hit in ipairs(hitIcons) do
         if demo then
@@ -872,24 +932,9 @@ end
 local function CreateHitAnchor()
     hitAnchor = CreateFrame("Frame", "SealTimersForeverHitAnchor", UIParent)
     hitAnchor:SetSize(HIT_SIZE, HIT_SIZE)
-    hitAnchor:SetPoint(db.hitPoint, UIParent, db.hitPoint, db.hitX, db.hitY)
-    hitAnchor:SetMovable(true)
-    hitAnchor:SetClampedToScreen(true)
-    hitAnchor:RegisterForDrag("LeftButton")
     hitAnchor:SetHitRectInsets(0, -(HIT_SIZE + SPACING), 0, 0) -- tambien el segundo icono
-    hitAnchor:SetScript("OnDragStart", hitAnchor.StartMoving)
-    hitAnchor:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local point, _, _, x, y = self:GetPoint()
-        db.hitPoint, db.hitX, db.hitY = point, x, y
-        if ns.RefreshOptions then ns.RefreshOptions() end
-    end)
-    hitAnchor.bg = hitAnchor:CreateTexture(nil, "BACKGROUND")
-    hitAnchor.bg:SetAllPoints()
-    hitAnchor.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
-    hitAnchor.label = hitAnchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    hitAnchor.label:SetPoint("BOTTOM", hitAnchor, "TOP", 0, 2)
-    hitAnchor.label:SetText(BRAND .. L.HIT_ICON .. "|r - " .. L.DRAG_HINT)
+    MakeMovable(hitAnchor, "hit")
+    AddDragHint(hitAnchor, L.HIT_ICON, true)
     hitIcons[1], hitIcons[2] = CreateHitIcon(1), CreateHitIcon(2)
     ApplyHitAnchor()
 end
@@ -937,19 +982,27 @@ local function OnSealEffect(spellID)
     AddHit(sealTextures[name] or C_Spell.GetSpellTexture(spellID))
 end
 
--- Icono del Eco en el bloque, a la derecha del sello, mientras exista. Con la
--- muestra (pestana Posicion o desbloqueado) se ve uno de Orden.
+-- Icono del Eco, en su propio marco (a la derecha del bloque si no se ha
+-- movido), mientras exista. No depende del interruptor de twist: hay quien usa
+-- la barra de golpe de Blizzard y solo quiere el Eco. Con la muestra (pestana
+-- Posicion o desbloqueado) se ve uno de Orden.
 ApplyEcho = function()
-    local show = db.twistEnabled and db.echoIcon and (echoTex ~= nil or Demo())
+    local demo = db.echoIcon and Demo()
+    local show = db.echoIcon and (echoTex ~= nil or Demo())
     if show then
         echoIcon.texture:SetTexture(echoTex or C_Spell.GetSpellTexture(DEMO_HITS[2]))
     end
     echoIcon:SetShown(show)
-    Layout()
+    ShowDragHint(echoAnchor, demo)
 end
 
 local function CreateEchoIcon()
-    echoIcon = BuildIcon(anchor, ICON_SIZE, 18)
+    echoAnchor = CreateFrame("Frame", "SealTimersForeverEchoAnchor", UIParent)
+    echoAnchor:SetSize(ICON_SIZE, ICON_SIZE)
+    MakeMovable(echoAnchor, "echo")
+    AddDragHint(echoAnchor, L.ECHO_ICON, true)
+    echoIcon = BuildIcon(echoAnchor, ICON_SIZE, 18)
+    echoIcon:SetAllPoints()
     echoIcon.label = echoIcon:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     echoIcon.label:SetPoint("BOTTOM", echoIcon, "BOTTOM", 0, 2)
     echoIcon.label:SetText(BRAND .. L.ECHO .. "|r")
@@ -962,9 +1015,7 @@ end
 -- Arrastrar, el fondo, el rotulo y la muestra: desbloqueado o con la pestana
 -- Posicion abierta
 local function ApplyLock()
-    anchor:EnableMouse(Demo())
-    anchor.bg:SetShown(Demo())
-    anchor.label:SetShown(Demo())
+    ShowDragHint(anchor, Demo())
     UpdateSealDemo()
     if swingBar then ApplySwingBar() end
     if hitAnchor then ApplyHitAnchor() end
@@ -977,75 +1028,66 @@ local function SetPreview(on)
 end
 
 -- Posicion al pixel (pestana Posicion). Los deslizadores van en pixeles de
--- pantalla desde el centro; db guarda el punto en la escala del bloque, como
+-- pantalla desde el centro; db guarda el punto en la escala de cada marco, como
 -- al arrastrar.
-local POSITIONS = {
-    seals = { point = "point", x = "x", y = "y", frame = function() return anchor end },
-    hit = { point = "hitPoint", x = "hitX", y = "hitY", frame = function() return hitAnchor end },
-}
-
 local function Round(value) return math.floor(value + 0.5) end
 
-local function Place(pos)
-    local f = pos.frame()
-    f:ClearAllPoints()
-    f:SetPoint(db[pos.point], UIParent, db[pos.point], db[pos.x], db[pos.y])
-end
-
 local function GetOffset(what)
-    local pos, scale = POSITIONS[what], db.scale
+    local pos = POSITIONS[what]
+    local scale = db[pos.scale]
     if db[pos.point] == "CENTER" then return Round(db[pos.x] * scale), Round(db[pos.y] * scale) end
-    -- Arrastrado (otro punto de anclaje): se mide donde quedo
-    local x, y = pos.frame():GetCenter()
+    -- Arrastrado (otro punto de anclaje) o pegado al bloque: se mide donde quedo
+    local x, y = pos.frame:GetCenter()
     if not x then return 0, 0 end -- ponytail: sin colocar aun, sale en 0
     local cx, cy = UIParent:GetCenter()
     return Round(x * scale - cx), Round(y * scale - cy)
 end
 
 local function SetOffset(what, x, y)
-    local pos, scale = POSITIONS[what], db.scale
+    local pos = POSITIONS[what]
+    local scale = db[pos.scale]
     local ox, oy = GetOffset(what)
     db[pos.point], db[pos.x], db[pos.y] = "CENTER", (x or ox) / scale, (y or oy) / scale
     Place(pos)
 end
 
-local function ResetPositions()
+local function ApplyScale()
     for _, pos in pairs(POSITIONS) do
-        db[pos.point], db[pos.x], db[pos.y] = DEFAULTS[pos.point], DEFAULTS[pos.x], DEFAULTS[pos.y]
-        Place(pos)
+        if pos.frame then pos.frame:SetScale(db[pos.scale]) end
     end
 end
 
-local function ApplyScale()
-    anchor:SetScale(db.scale)
-    if hitAnchor then hitAnchor:SetScale(db.scale) end
+-- Posiciones y tamanos de todo (la barra y el Eco vuelven junto al bloque)
+local function ResetPositions()
+    for _, pos in pairs(POSITIONS) do
+        db[pos.point], db[pos.x], db[pos.y] = DEFAULTS[pos.point], DEFAULTS[pos.x], DEFAULTS[pos.y]
+        db[pos.scale] = DEFAULTS[pos.scale]
+    end
+    ApplyScale()
+    for _, pos in pairs(POSITIONS) do Place(pos) end
+end
+
+local function GetScale(what) return db[POSITIONS[what].scale] end
+
+-- Cambia el tamano sin moverlo de sitio: se queda donde estaba su centro (lo
+-- que va pegado al bloque sigue pegado)
+local function SetScale(what, value)
+    local pos = POSITIONS[what]
+    local x, y = GetOffset(what)
+    db[pos.scale] = value
+    pos.frame:SetScale(value)
+    if db[pos.point] then SetOffset(what, x, y) end
 end
 
 local function CreateAnchor()
     anchor = CreateFrame("Frame", "SealTimersForeverAnchor", UIParent)
     anchor:SetSize(ICON_SIZE, ICON_SIZE)
-    anchor:SetPoint(db.point, UIParent, db.point, db.x, db.y)
-    anchor:SetMovable(true)
-    anchor:SetClampedToScreen(true)
-    anchor:RegisterForDrag("LeftButton")
-    -- Tambien se agarra por la barra de golpe, que sobresale del bloque
-    local barSide = -(SWING_WIDTH - ICON_SIZE) / 2
-    anchor:SetHitRectInsets(barSide, barSide, -(SWING_HEIGHT + 6), 0)
-    anchor:SetScript("OnDragStart", anchor.StartMoving)
-    anchor:SetScript("OnDragStop", function(self)
-        self:StopMovingOrSizing()
-        local point, _, _, x, y = self:GetPoint()
-        db.point, db.x, db.y = point, x, y
-        if ns.RefreshOptions then ns.RefreshOptions() end
-    end)
-
-    -- Solo se ven desbloqueado: marcan donde va el bloque aunque no haya sellos
-    anchor.bg = anchor:CreateTexture(nil, "BACKGROUND")
-    anchor.bg:SetAllPoints()
-    anchor.bg:SetColorTexture(0.84, 0.59, 1, 0.35)
-    anchor.label = anchor:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    MakeMovable(anchor, "seals")
+    -- Solo se ven al colocarlo: marcan donde va el bloque aunque no haya sellos.
+    -- El rotulo va debajo: encima esta la barra de golpe.
+    AddDragHint(anchor, L.TITLE, true)
+    anchor.label:ClearAllPoints()
     anchor.label:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
-    anchor.label:SetText(BRAND .. L.TITLE .. "|r - " .. L.DRAG_HINT)
     -- Sello de muestra: vuelve a empezar al acabar mientras se coloca
     anchor.demo = BuildIcon(anchor, ICON_SIZE, 18)
     TruncateCountdown(anchor.demo.cooldown)
@@ -1089,7 +1131,7 @@ local function CreateOptions()
         ApplyLock = ApplyLock, ApplyScale = ApplyScale, ApplySwingBar = ApplySwingBar,
         ApplyHitAnchor = ApplyHitAnchor, UpdateTicks = UpdateTicks, ApplyEcho = ApplyEcho,
         SetPreview = SetPreview, GetOffset = GetOffset, SetOffset = SetOffset,
-        ResetPositions = ResetPositions,
+        GetScale = GetScale, SetScale = SetScale, ResetPositions = ResetPositions,
         ApplyBorders = ApplyBorders,
         -- Vista previa de las paginas Aviso y Borde: un sello de muestra grande
         CreatePreview = function(parent, size)
@@ -1140,6 +1182,10 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         end
         SealTimersForeverDB = SealTimersForeverDB or {}
         db = SealTimersForeverDB
+        -- Antes de la 1.10 todo iba con el tamano del bloque: se conserva
+        if db.scale and db.swingScale == nil then
+            db.swingScale, db.hitScale, db.echoScale = db.scale, db.scale, db.scale
+        end
         for key, value in pairs(DEFAULTS) do
             if db[key] == nil then db[key] = value end
         end
@@ -1155,7 +1201,6 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         CreateHitAnchor()
         CreateEchoIcon()
         ApplyEcho()
-        ApplyScale()
         CreateOptions()
         self:RegisterUnitEvent("UNIT_AURA", "player")
         self:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")

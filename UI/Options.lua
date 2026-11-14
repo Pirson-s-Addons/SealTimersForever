@@ -5,7 +5,8 @@ local L = ns.L
 -- OPCIONES
 -- ==========================================
 -- Raiz "Acerca de" (UI/About.lua) y, colgando de ella, "General" con los
--- ajustes, "Aviso" (brillo al acabarse el sello), "Borde" y "Posicion" para colocar cada cosa al pixel (como DR Tracker
+-- ajustes, "Aviso" (brillo al acabarse el sello), "Borde" y "Posicion" para colocar y
+-- dimensionar cada elemento al pixel (como DR Tracker
 -- Forever): paneles propios con la plantilla de todos los addons de Pirson
 -- (titulo, logo con version, secciones en morado y "Valores por defecto").
 
@@ -13,6 +14,7 @@ local HEADER = "|cffC47FF3"
 local LOGO = "Interface\\AddOns\\SealTimersForever\\img\\logo_stf"
 local X = 16
 -- Lo que devuelve "Valores por defecto": los ajustes del panel, no la posicion
+-- (el tamano de la barra, el golpe y el Eco va en Posicion)
 local PANEL_KEYS = { "locked", "scale", "twistEnabled", "swingBar", "twistGlow", "twistWindow", "twistSound", "hitIcon", "echoIcon" }
 -- Los de la pagina Aviso
 local ALERT_KEYS = { "expireGlow", "expireStyle", "expireTime", "expireIntensity" }
@@ -79,7 +81,7 @@ function ns.RefreshOptions()
 end
 
 -- api: { db, defaults, ApplyLock, ApplyScale, ApplySwingBar, ApplyHitAnchor, UpdateTicks,
---        SetPreview, GetOffset, SetOffset, ResetPositions, CreatePreview, UpdateExpireGlow, ApplyBorders }
+--        SetPreview, GetOffset, SetOffset, GetScale, SetScale, ResetPositions, CreatePreview, UpdateExpireGlow, ApplyBorders }
 -- Devuelve la subcategoria General (destino de /stf).
 function ns.CreateOptions(api)
     local db = api.db
@@ -150,27 +152,27 @@ function ns.CreateOptions(api)
     -- General: bloqueo y tamano del bloque
     Header(panel, -56, L.GENERAL_HEADER)
     Checkbox(panel, "locked", L.LOCK, L.LOCK_TOOLTIP, X, -81, api.ApplyLock)
-    Slider(panel, "scale", L.SIZE, L.SIZE_TOOLTIP, X, -135, 0.5, 3, 0.1, function(value)
-        return string.format("%d%%", math.floor(value * 100 + 0.5))
-    end, api.ApplyScale)
-    Separator(panel, -180)
+    local function Percent(value) return string.format("%d%%", math.floor(value * 100 + 0.5)) end
+    Slider(panel, { name = "scale", get = function() return db.scale end,
+        set = function(value) api.SetScale("seals", value) end }, L.SIZE, L.SIZE_TOOLTIP, X, -135, 0.5, 3, 0.1, Percent)
+    -- El Eco no cuelga del twist: se puede querer solo el Eco con la barra de Blizzard
+    Checkbox(panel, "echoIcon", L.ECHO_ICON, L.ECHO_ICON_TOOLTIP, X, -175, api.ApplyEcho)
+    Separator(panel, -210)
 
     -- Seal twisting: un interruptor general y, colgando de el, sus opciones
-    Header(panel, -200, L.TWIST_HEADER)
-    Checkbox(panel, "twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, X, -225, function()
+    Header(panel, -230, L.TWIST_HEADER)
+    Checkbox(panel, "twistEnabled", L.TWIST_ENABLED, L.TWIST_ENABLED_TOOLTIP, X, -255, function()
         api.ApplySwingBar()
         api.ApplyHitAnchor()
-        api.ApplyEcho()
         UpdateChildren()
     end)
     local cx = X + 20
-    children[#children + 1] = Checkbox(panel, "swingBar", L.SWING_BAR, L.SWING_BAR_TOOLTIP, cx, -255, api.ApplySwingBar)
-    children[#children + 1] = Checkbox(panel, "twistGlow", L.TWIST_GLOW, L.TWIST_GLOW_TOOLTIP, cx, -285, api.ApplySwingBar)
-    children[#children + 1] = Slider(panel, "twistWindow", L.TWIST_WINDOW, L.TWIST_WINDOW_TOOLTIP, cx, -335, 0.1, 1, 0.1,
+    children[#children + 1] = Checkbox(panel, "swingBar", L.SWING_BAR, L.SWING_BAR_TOOLTIP, cx, -285, api.ApplySwingBar)
+    children[#children + 1] = Checkbox(panel, "twistGlow", L.TWIST_GLOW, L.TWIST_GLOW_TOOLTIP, cx, -315, api.ApplySwingBar)
+    children[#children + 1] = Slider(panel, "twistWindow", L.TWIST_WINDOW, L.TWIST_WINDOW_TOOLTIP, cx, -365, 0.1, 1, 0.1,
         function(value) return string.format("%.1f s", value) end, api.UpdateTicks)
-    children[#children + 1] = Checkbox(panel, "twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP, cx, -370, nil)
-    children[#children + 1] = Checkbox(panel, "hitIcon", L.HIT_ICON, L.HIT_ICON_TOOLTIP, cx, -400, api.ApplyHitAnchor)
-    children[#children + 1] = Checkbox(panel, "echoIcon", L.ECHO_ICON, L.ECHO_ICON_TOOLTIP, cx, -430, api.ApplyEcho)
+    children[#children + 1] = Checkbox(panel, "twistSound", L.TWIST_SOUND, L.TWIST_SOUND_TOOLTIP, cx, -400, nil)
+    children[#children + 1] = Checkbox(panel, "hitIcon", L.HIT_ICON, L.HIT_ICON_TOOLTIP, cx, -430, api.ApplyHitAnchor)
     Separator(panel, -470)
 
     panel:SetScript("OnShow", function()
@@ -358,7 +360,9 @@ function ns.CreateOptions(api)
     hint:SetText(L.POS_HINT)
 
     local editing = "seals"
-    local objects = { { "seals", L.POS_SEALS }, { "hit", L.HIT_ICON } }
+    local objects = {
+        { "seals", L.POS_SEALS }, { "swing", L.SWING_BAR }, { "hit", L.HIT_ICON }, { "echo", L.ECHO_ICON },
+    }
     local label = position:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
     label:SetPoint("TOPLEFT", X, -116)
     label:SetText(L.POS_OBJECT)
@@ -399,9 +403,14 @@ function ns.CreateOptions(api)
         get = function() return select(2, api.GetOffset(editing)) end,
         set = function(value) api.SetOffset(editing, nil, value) end,
     }, L.POS_Y, L.POS_TOOLTIP, X, -217, -halfH, halfH, 1, Pixels)
-    Separator(position, -257)
+    Slider(position, {
+        name = "posScale",
+        get = function() return api.GetScale(editing) end,
+        set = function(value) api.SetScale(editing, value) end,
+    }, L.SIZE, L.POS_SIZE_TOOLTIP, X, -267, 0.5, 3, 0.1, Percent)
+    Separator(position, -307)
 
-    ResetButton(position, -277, function()
+    ResetButton(position, -327, function()
         api.ResetPositions()
         Refresh()
     end)

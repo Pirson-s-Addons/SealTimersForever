@@ -44,7 +44,7 @@ It works with **every seal in WoW Forever**: Seal of Fury, Command, Righteousnes
 - Detects every seal in your spellbook, including new Forever seals like **Seal of Fury**.
 - **Running-out alert**: the icon lights up in the last seconds of the seal (5 s by default) so you recast it in time. Pick the alert type (pulsing red glow, steady red glow, flashing icon or Blizzard's proc glow), its intensity and when it starts, with a live preview.
 - **Border**: optional border around the icons, with its thickness (1–6 px) and colour.
-- **Movable** anywhere on the screen and **resizable** from 50% to 300%.
+- **Movable** anywhere on the screen and **resizable** from 50% to 300%: seal icons, swing bar, hit icon and Echo icon, each one on its own.
 - Only runs for paladins. Lightweight, no libraries. Settings live in the game's own **Options → AddOns** panel.
 
 ## Installation
