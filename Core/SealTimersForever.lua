@@ -42,13 +42,16 @@ local L = ns.L
 -- Forever (p. ej. Sello de Furia) entran por ese prefijo y por el libro de
 -- hechizos, sin saber su ID.
 local SEAL_SPELLS = { 21084, 21082, 20165, 20166, 20164, 20375 }
--- Sellos SIN Eco en Forever (Cruzado, Luz y Sabiduria): el resto, incluidos
--- los nuevos como el Sello de Furia, se pueden twistear.
-local NO_ECHO_SPELLS = { 21082, 20165, 20166 }
--- Ecos del talento Twist of Light (Furia, Orden, Rectitud, Justicia): auras
--- propias sin duracion que consume el siguiente golpe.
-local ECHO_SPELLS = { 1311701, 1311703, 1311704, 1311705 }
--- Talento final de Reprension (Twist of Light): sin el no hay Ecos
+-- Sellos SIN Eco en Forever (solo el del Cruzado): el resto, incluidos los
+-- nuevos como el Sello de Furia, se pueden twistear.
+local NO_ECHO_SPELLS = { 21082 }
+-- Ecos del talento Colera desellada / Unsealed Wrath (Furia, Orden, Rectitud,
+-- Justicia, Luz, Sabiduria): cada golpe guarda una copia del sello activo, 15 s
+-- y hasta 3 cargas; golpear con otro sello las gasta todas (datos del cliente
+-- 1.60.1.70938). Antes de esa build era Twist of Light, con el mismo ID.
+local ECHO_SPELLS = { 1311701, 1311703, 1311704, 1311705, 1328198, 1328206 }
+local ECHO_DURATION, ECHO_MAX = 15, 3
+-- Talento final de Reprension (Unsealed Wrath): sin el no hay Ecos
 local TWIST_TALENT = 1310735
 -- Muestra para colocar las cosas: Rectitud en el bloque; Rectitud y Orden
 -- (golpe con twist) en el icono de golpe
@@ -117,6 +120,7 @@ local sealTextures = {}        -- nombre del sello -> ultima textura vista
 local debugMode = false
 local echoNames, echoIDs = {}, {}  -- nombre de cada Eco; /stf debug: auraInstanceID -> nombre
 local echoTex                  -- textura del Eco pendiente (de su aura o deducido), o nil
+local echoStacks, echoSeal, echoAt -- sus cargas; deducido: de que sello y desde cuando
 local echoIcon, echoAnchor     -- su icono y el marco que lo mueve
 local previewing = false       -- pestana Posicion abierta: se ve la muestra
 local anchor
@@ -209,7 +213,7 @@ local function SealTexture(name)
     return sealTextures[name] or "Interface\\Icons\\INV_Misc_QuestionMark"
 end
 
--- Twist of Light aprendido. Sin la funcion (cliente raro) se da por bueno.
+-- Unsealed Wrath aprendido. Sin la funcion (cliente raro) se da por bueno.
 local function HasTwistTalent()
     if not C_SpellBook.IsSpellKnown then return true end
     return C_SpellBook.IsSpellKnown(TWIST_TALENT) == true
@@ -619,23 +623,48 @@ end
 
 local ApplyEcho
 
--- Las auras de los Ecos no son secretas (medido en la beta): se leen por su ID
--- tambien en combate y mandan sobre lo deducido. Si no se pueden leer, se
--- queda lo deducido de los lanzamientos y los golpes.
+-- Las auras de los Ecos no son secretas (medido en la beta). Si el juego las
+-- marcara secretas, GetPlayerAuraBySpellID no daria nada: entonces el Eco se
+-- deduce de los golpes (DeduceEcho).
+local function EchoAurasReadable()
+    for _, spellID in ipairs(ECHO_SPELLS) do
+        if C_Secrets.ShouldSpellAuraBeSecret(spellID) then return false end
+    end
+    return true
+end
+
+-- Cargas de un aura: su numero, o el texto que da el juego si fuera secreto
+local function AuraStacks(aura)
+    local count = aura.applications
+    if Readable(count) then return count end
+    local id = aura.auraInstanceID
+    if not Readable(id) or not C_UnitAuras.GetAuraApplicationDisplayCount then return nil end
+    local ok, text = pcall(C_UnitAuras.GetAuraApplicationDisplayCount, "player", id, 1, ECHO_MAX)
+    return ok and text or nil
+end
+
+-- El Eco con mas cargas manda (tras cambiar de sello puede haber dos un momento)
 local function ScanEchoes()
-    local found
+    if not EchoAurasReadable() then return end
+    local best, bestCount, bestID
     for _, spellID in ipairs(ECHO_SPELLS) do
         local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
         if not ok or IsSecret(aura) then return end
-        if aura and not found then
-            found = Readable(aura.icon) and aura.icon or C_Spell.GetSpellTexture(spellID)
-            Debug("eco activo: " .. (C_Spell.GetSpellName(spellID) or spellID))
+        if aura then
+            local count = AuraStacks(aura)
+            local n = type(count) == "number" and count or 1
+            if not best or n > bestCount then best, bestCount, bestID = aura, n, spellID end
         end
     end
-    if found ~= echoTex then
-        echoTex = found
-        ApplyEcho()
+    if best then
+        echoTex = Readable(best.icon) and best.icon or C_Spell.GetSpellTexture(bestID)
+        echoStacks = AuraStacks(best)
+        echoSeal, echoAt = nil, nil
+        Debug(("eco activo: %s x%s"):format(C_Spell.GetSpellName(bestID) or bestID, tostring(bestCount)))
+    else
+        echoTex, echoStacks, echoSeal, echoAt = nil, nil, nil, nil
     end
+    ApplyEcho(best and best.auraInstanceID)
 end
 
 local function OnUnitAura(info)
@@ -679,13 +708,6 @@ local function OnSealCast(spellID)
     local name = SealNameForSpell(spellID)
     if not name then return end
     Debug(("lanzado %s (%s)"):format(name, tostring(spellID)))
-    -- Twist of Light: sustituir un sello con Eco deja su Eco hasta el siguiente
-    -- golpe. Se deduce del lanzamiento (no es secreto); el aura puede serlo.
-    local previous = activeSeal
-    if previous and previous ~= name and HasEcho(previous) and HasTwistTalent() then
-        echoTex = SealTexture(previous)
-        ApplyEcho()
-    end
     activeSeal = name
     local icon = ShowSeal(name, C_Spell.GetSpellTexture(spellID))
     icon.castAt = GetTime()
@@ -819,6 +841,11 @@ end
 
 local function OnSwingUpdate()
     UpdateExpireGlows()
+    -- Eco deducido: sus 15 s sin golpes
+    if echoAt and GetTime() - echoAt > ECHO_DURATION then
+        echoTex, echoStacks, echoSeal, echoAt = nil, nil, nil, nil
+        ApplyEcho()
+    end
     if not swingStart then return end
     local elapsed = GetTime() - swingStart
     -- Sin golpes un rato (fin del combate, sin objetivo): se esconde
@@ -939,6 +966,21 @@ local function CreateHitAnchor()
     ApplyHitAnchor()
 end
 
+-- Unsealed Wrath sin poder leer su aura: el golpe con otro sello gasta las
+-- cargas guardadas, y luego guarda una del sello activo (hasta ECHO_MAX).
+-- ponytail: un golpe fallado cuenta igual (UNIT_COMBAT es secreto en combate).
+local function DeduceEcho()
+    if not HasTwistTalent() then return end
+    if echoSeal and echoSeal ~= activeSeal then echoSeal, echoStacks = nil, nil end
+    if activeSeal and HasEcho(activeSeal) then
+        echoStacks = echoSeal == activeSeal and math.min((echoStacks or 0) + 1, ECHO_MAX) or 1
+        echoSeal, echoAt = activeSeal, GetTime()
+    end
+    echoTex = echoSeal and SealTexture(echoSeal) or nil
+    if not echoSeal then echoAt = nil end
+    ApplyEcho()
+end
+
 local function OnSwing(duration, swingType)
     if swingType ~= MAIN_HAND or not Readable(duration) or duration <= 0 then return end
     Debug(("golpe (%.1f s)"):format(duration))
@@ -954,11 +996,7 @@ local function OnSwing(duration, swingType)
     -- sale cuando salta, con OnSealEffect. El resto, en cada golpe.
     if activeSeal and not db.effectSeals[activeSeal] then AddHit(SealTexture(activeSeal)) end
     if twisted and not db.effectSeals[sealAtLastSwing] then AddHit(SealTexture(sealAtLastSwing)) end
-    -- El golpe consume el Eco
-    if echoTex then
-        echoTex = nil
-        ApplyEcho()
-    end
+    if not EchoAurasReadable() then DeduceEcho() end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
     UpdateTicks()
@@ -983,14 +1021,26 @@ local function OnSealEffect(spellID)
 end
 
 -- Icono del Eco, en su propio marco (a la derecha del bloque si no se ha
--- movido), mientras exista. No depende del interruptor de twist: hay quien usa
--- la barra de golpe de Blizzard y solo quiere el Eco. Con la muestra (pestana
--- Posicion o desbloqueado) se ve uno de Orden.
-ApplyEcho = function()
+-- movido), mientras exista, con sus cargas y sus 15 s. No depende del
+-- interruptor de twist: hay quien usa la barra de golpe de Blizzard y solo
+-- quiere el Eco. Con la muestra (pestana Posicion o desbloqueado) se ve uno de
+-- Orden con 3 cargas. auraID: el aura leida, para su tiempo exacto.
+ApplyEcho = function(auraID)
     local demo = db.echoIcon and Demo()
     local show = db.echoIcon and (echoTex ~= nil or Demo())
     if show then
+        local real = echoTex ~= nil
         echoIcon.texture:SetTexture(echoTex or C_Spell.GetSpellTexture(DEMO_HITS[2]))
+        echoIcon.count:SetText(real and (echoStacks or "") or ECHO_MAX)
+        local cooldown = echoIcon.cooldown
+        if not real then
+            cooldown:Clear()
+        elseif auraID ~= nil and Readable(auraID) then
+            local ok, duration = pcall(C_UnitAuras.GetAuraDuration, "player", auraID)
+            if ok and duration then cooldown:SetCooldownFromDurationObject(duration) end
+        elseif echoAt then
+            cooldown:SetCooldown(echoAt, ECHO_DURATION)
+        end
     end
     echoIcon:SetShown(show)
     ShowDragHint(echoAnchor, demo)
@@ -1003,9 +1053,14 @@ local function CreateEchoIcon()
     AddDragHint(echoAnchor, L.ECHO_ICON, true)
     echoIcon = BuildIcon(echoAnchor, ICON_SIZE, 18)
     echoIcon:SetAllPoints()
+    TruncateCountdown(echoIcon.cooldown)
     echoIcon.label = echoIcon:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    echoIcon.label:SetPoint("BOTTOM", echoIcon, "BOTTOM", 0, 2)
+    echoIcon.label:SetPoint("TOPLEFT", echoIcon, "TOPLEFT", 2, -2)
     echoIcon.label:SetText(BRAND .. L.ECHO .. "|r")
+    -- Cargas de Unsealed Wrath, abajo a la derecha como las del bufo de Blizzard
+    echoIcon.count = echoIcon:CreateFontString(nil, "OVERLAY")
+    echoIcon.count:SetFont(STANDARD_TEXT_FONT, 16, "OUTLINE")
+    echoIcon.count:SetPoint("BOTTOMRIGHT", echoIcon, "BOTTOMRIGHT", -1, 2)
     echoIcon:Hide()
 end
 
@@ -1152,7 +1207,7 @@ local function CreateOptions()
             debugMode = not debugMode
             print(BRAND .. "Seal Timers Forever|r: " .. (debugMode and L.DEBUG_ON or L.DEBUG_OFF))
             -- Si el juego marca los Ecos como secretos en combate
-            Debug("talento Twist of Light: " .. (HasTwistTalent() and "si" or "no"))
+            Debug("talento Unsealed Wrath: " .. (HasTwistTalent() and "si" or "no"))
             for _, spellID in ipairs(ECHO_SPELLS) do
                 Debug(("eco %s (%d): %s en combate"):format(C_Spell.GetSpellName(spellID) or "?", spellID,
                     C_Secrets.ShouldSpellAuraBeSecret(spellID) and "secreto" or "legible"))
