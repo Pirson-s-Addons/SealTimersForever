@@ -96,6 +96,12 @@
 ## Notes-viVN: |cFF33CCFFẤn hiệp sĩ đang hoạt động cùng thời gian còn lại, và bộ đếm đòn đánh cho seal twisting. Có thể di chuyển và đổi kích thước.|r
 
 ## SavedVariables: SealTimersForeverDB
+## X-Curse-Project-ID: 1701053
+## X-License: MIT
+## X-Copyright: Copyright (c) 2025-2026 Pirson
+## X-Website: https://github.com/Pirson-s-Addons/SealTimersForever
+## X-Localizations: enUS, esES, esMX, deDE, frFR, itIT, ptBR, ruRU, koKR, zhCN, zhTW, plPL, svSE, noNO, trTR, jaJP, arSA, hiIN, thTH, viVN, csCZ
+## AddonCompartmentFunc: SealTimersForever_OnAddonCompartmentClick
 
 # Solo WoW Forever: el sufijo _Camelot es el game type que busca ese cliente, y
 # sin un .toc generico ningun otro cliente lista el addon.
