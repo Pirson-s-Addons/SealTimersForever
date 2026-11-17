@@ -121,6 +121,10 @@ local debugMode = false
 local echoNames, echoIDs = {}, {}  -- nombre de cada Eco; /stf debug: auraInstanceID -> nombre
 local echoTex                  -- textura del Eco pendiente (de su aura o deducido), o nil
 local echoStacks, echoSeal, echoAt -- sus cargas; deducido: de que sello y desde cuando
+-- Deduccion: un golpe solo cuenta si a la vez cambian tus auras (UNIT_AURA llega aunque sea
+-- secreto): un fallo, esquiva o parada no guarda Eco y no las toca
+local echoSwingAt, echoAuraAt, ConfirmEcho
+local ECHO_CONFIRM = 0.4 -- segundos entre el golpe y su cambio de auras, en cualquier orden
 local echoIcon, echoAnchor     -- su icono y el marco que lo mueve
 local previewing = false       -- pestana Posicion abierta: se ve la muestra
 local anchor
@@ -669,6 +673,8 @@ end
 
 local function OnUnitAura(info)
     if echoIcon then ScanEchoes() end
+    echoAuraAt = GetTime()
+    if ConfirmEcho then ConfirmEcho() end
     if not Readable(info) then
         Debug("UNIT_AURA sin datos legibles")
         RefreshTracked()
@@ -981,6 +987,13 @@ local function DeduceEcho()
     ApplyEcho()
 end
 
+-- Golpe pendiente y cambio de auras a menos de ECHO_CONFIRM: el golpe acerto y se cuenta
+ConfirmEcho = function()
+    if not (echoSwingAt and echoAuraAt) or math.abs(echoSwingAt - echoAuraAt) > ECHO_CONFIRM then return end
+    echoSwingAt = nil
+    DeduceEcho()
+end
+
 local function OnSwing(duration, swingType)
     if swingType ~= MAIN_HAND or not Readable(duration) or duration <= 0 then return end
     Debug(("golpe (%.1f s)"):format(duration))
@@ -996,7 +1009,10 @@ local function OnSwing(duration, swingType)
     -- sale cuando salta, con OnSealEffect. El resto, en cada golpe.
     if activeSeal and not db.effectSeals[activeSeal] then AddHit(SealTexture(activeSeal)) end
     if twisted and not db.effectSeals[sealAtLastSwing] then AddHit(SealTexture(sealAtLastSwing)) end
-    if not EchoAurasReadable() then DeduceEcho() end
+    if not EchoAurasReadable() then
+        echoSwingAt = GetTime()
+        ConfirmEcho()
+    end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
     UpdateTicks()
@@ -1277,6 +1293,13 @@ frame:SetScript("OnEvent", function(self, event, arg1, arg2, arg3, arg4, arg5)
         -- Fuera de combate el siguiente golpe no cuenta como twist
         sealAtLastSwing = nil
         FullScan()
+        -- En combate las cargas del Eco se deducen por golpes (cuenta tambien los
+        -- fallados): fuera, el aura ya se lee y manda su numero de verdad. Otra vez
+        -- al momento por si el aura tarda en dejar de ser secreta.
+        if echoIcon then
+            ScanEchoes()
+            C_Timer.After(0.5, function() if echoIcon then ScanEchoes() end end)
+        end
     elseif event == "SPELLS_CHANGED" then
         ScanSpellBook()
     end
