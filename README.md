@@ -1,26 +1,13 @@
-<h1 align="center">Seal Timers Forever</h1>
+<p align="center"><a href="https://www.curseforge.com/wow/addons/seal-timers-forever"><img src="https://raw.githubusercontent.com/Pirson-s-Addons/.github/main/profile/assets/readme-st-en.svg" width="100%" alt="Seal Timers Forever"/></a></p>
+
+<p align="center"><b>English</b> · <a href="README.es.md">Español</a></p>
 
 <p align="center">
-  <b>Your active paladin seal on screen with its remaining time, movable and resizable, for World of Warcraft: Forever</b>
+<a href="https://www.curseforge.com/wow/addons/seal-timers-forever"><b>CurseForge</b></a> ·
+<a href="https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest"><b>Download</b></a>
 </p>
 
-<p align="center">
-<a href="https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest">
-<img src="https://img.shields.io/github/v/release/Pirson-s-Addons/SealTimersForever?style=for-the-badge&color=A78BFA">
-</a>
-<img src="https://img.shields.io/badge/WoW_Forever-1.60.1-C4B5FD?style=for-the-badge">
-<a href="LICENSE">
-<img src="https://img.shields.io/badge/License-MIT-E9D5FF?style=for-the-badge">
-</a>
-</p>
-
-<p align="center">
-<a href="README.es.md">🇪🇸 Español</a>
-</p>
-
----
-
-## 📸 Screenshots
+## Screenshots
 
 <table>
 <tr>
@@ -28,8 +15,6 @@
 <td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/670/opcions-menu-seal-timers-forever-png.png" alt="Options"><br><sub>Options</sub></td>
 </tr>
 </table>
-
----
 
 ## What it does
 
@@ -47,6 +32,13 @@ It works with **every seal in WoW Forever**: Seal of Fury, Command, Righteousnes
 - **Movable** anywhere on the screen and **resizable** from 50% to 300%: seal icons, swing bar, hit icon and Echo icon, each one on its own.
 - Only runs for paladins. Lightweight, no libraries. Settings live in the game's own **Options → AddOns** panel.
 
+## Usage
+
+- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, an **Alert** tab for the running-out alert, a **Border** tab and a **Position** tab with sliders and a live preview.
+- `/stf check` lists the seals in your spellbook and how each one is tracked in combat.
+- `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
+- `/stf reset` clears the learned seal durations.
+
 ## Installation
 
 1. Download the zip from the [latest release](https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest).
@@ -55,14 +47,14 @@ It works with **every seal in WoW Forever**: Seal of Fury, Command, Righteousnes
 
 It only loads on WoW Forever: the only TOC is `SealTimersForever_Camelot.toc` (`Camelot` is Forever's game type), so no other client lists it.
 
-## Usage
+## Notes
 
-- `/stf` opens the settings: **Lock position** (untick it to drag the icons) and **Size**, an **Alert** tab for the running-out alert, a **Border** tab and a **Position** tab with sliders and a live preview.
-- `/stf check` lists the seals in your spellbook and how each one is tracked in combat.
-- `/stf debug` writes every seal cast, aura change, the damage your target takes and your Echoes to the chat (for bug reports).
-- `/stf reset` clears the learned seal durations.
+In WoW Forever, aura data is **secret** to addons during combat, so the addon cannot simply read the seal's buff. Instead it tracks **your own seal casts**, which are never secret, and counts the seal's duration (30 s in Forever) from the moment you cast it. When the game lets the addon read the real aura duration, that one is used.
 
-## API for addon authors
+## For addon authors
+
+<details>
+<summary><b>Public API</b></summary>
 
 Read-only and versioned. Add `## OptionalDeps: SealTimersForever` to your TOC.
 
@@ -79,11 +71,8 @@ end
 ```
 
 `expiresAt` (in `GetTime()` time) is only given when the cast was seen. After a `/reload` the time comes from the aura, which Forever may keep secret, so it is `nil` even though the icon shows it.
+</details>
 
-## Notes
+<br/>
 
-In WoW Forever, aura data is **secret** to addons during combat, so the addon cannot simply read the seal's buff. Instead it tracks **your own seal casts**, which are never secret, and counts the seal's duration (30 s in Forever) from the moment you cast it. When the game lets the addon read the real aura duration, that one is used.
-
----
-
-**Author**: Pirson · [GitHub](https://github.com/Pirson-s-Addons) · [CurseForge](https://www.curseforge.com/members/pirson/projects) · MIT License
+<p align="center"><a href="https://github.com/Pirson-s-Addons"><img src="https://raw.githubusercontent.com/Pirson-s-Addons/.github/main/profile/assets/readme-footer-en.svg" width="100%" alt="Part of Pirson's Addons. See all addons."/></a></p>

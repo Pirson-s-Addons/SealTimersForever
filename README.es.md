@@ -1,26 +1,13 @@
-<h1 align="center">Seal Timers Forever</h1>
+<p align="center"><a href="https://www.curseforge.com/wow/addons/seal-timers-forever"><img src="https://raw.githubusercontent.com/Pirson-s-Addons/.github/main/profile/assets/readme-st-es.svg" width="100%" alt="Seal Timers Forever"/></a></p>
+
+<p align="center"><a href="README.md">English</a> · <b>Español</b></p>
 
 <p align="center">
-  <b>Tu sello de paladín activo en pantalla con su tiempo restante, movible y redimensionable, para World of Warcraft: Forever</b>
+<a href="https://www.curseforge.com/wow/addons/seal-timers-forever"><b>CurseForge</b></a> ·
+<a href="https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest"><b>Descargar</b></a>
 </p>
 
-<p align="center">
-<a href="https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest">
-<img src="https://img.shields.io/github/v/release/Pirson-s-Addons/SealTimersForever?style=for-the-badge&color=A78BFA">
-</a>
-<img src="https://img.shields.io/badge/WoW_Forever-1.60.1-C4B5FD?style=for-the-badge">
-<a href="LICENSE">
-<img src="https://img.shields.io/badge/License-MIT-E9D5FF?style=for-the-badge">
-</a>
-</p>
-
-<p align="center">
-<a href="README.md">🇬🇧 English</a>
-</p>
-
----
-
-## 📸 Capturas
+## Capturas
 
 <table>
 <tr>
@@ -28,8 +15,6 @@
 <td align="center" width="50%"><img src="https://media.forgecdn.net/attachments/1975/670/opcions-menu-seal-timers-forever-png.png" alt="Options"><br><sub>Opciones</sub></td>
 </tr>
 </table>
-
----
 
 ## Qué hace
 
@@ -47,6 +32,13 @@ Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de R
 - Se puede **mover** a cualquier parte de la pantalla y **cambiar de tamaño** del 50 % al 300 %: iconos de sellos, barra de golpe, icono de golpe e icono del Eco, cada uno por separado.
 - Solo se activa en paladines. Ligero, sin librerías. Los ajustes están en el panel del propio juego: **Opciones → AddOns**.
 
+## Uso
+
+- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, una pestaña **Aviso** para el aviso al acabarse, una pestaña **Borde** y una pestaña **Posición** con deslizadores y muestra en vivo.
+- `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
+- `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
+- `/stf reset` borra las duraciones de sellos aprendidas.
+
 ## Instalación
 
 1. Descarga el zip de la [última release](https://github.com/Pirson-s-Addons/SealTimersForever/releases/latest).
@@ -55,14 +47,16 @@ Funciona con **todos los sellos de WoW Forever**: Sello de Furia, de Orden, de R
 
 Solo se carga en WoW Forever: su único `.toc` es `SealTimersForever_Camelot.toc` (`Camelot` es el game type de Forever), así que ningún otro cliente lo muestra.
 
-## Uso
+## Notas
 
-- `/stf` abre los ajustes: **Bloquear posición** (desmárcalo para arrastrar los iconos) y **Tamaño**, una pestaña **Aviso** para el aviso al acabarse, una pestaña **Borde** y una pestaña **Posición** con deslizadores y muestra en vivo.
-- `/stf check` lista los sellos de tu libro de hechizos y cómo se sigue cada uno en combate.
-- `/stf debug` escribe en el chat cada lanzamiento de sello, cambio de auras, el daño que recibe tu objetivo y tus Ecos (para reportar fallos).
-- `/stf reset` borra las duraciones de sellos aprendidas.
+En WoW Forever los datos de las auras son **secretos** para los addons en combate, así que el addon no puede leer sin más el bufo del sello. En su lugar sigue **tus propios lanzamientos de sello**, que nunca son secretos, y cuenta la duración del sello (30 s en Forever) desde que lo lanzas. Cuando el juego deja leer la duración real del aura, se usa esa.
 
-## API para autores de addons
+**Autor**: Pirson · [GitHub](https://github.com/Pirson-s-Addons) · [CurseForge](https://www.curseforge.com/members/pirson/projects) · Licencia MIT
+
+## Para autores de addons
+
+<details>
+<summary><b>API pública</b></summary>
 
 De solo lectura y con versión. Añade `## OptionalDeps: SealTimersForever` a tu TOC.
 
@@ -79,11 +73,8 @@ end
 ```
 
 `expiresAt` (en tiempo de `GetTime()`) solo se da cuando se vio el lanzamiento. Tras un `/reload` el tiempo sale del aura, que Forever puede mantener secreta, así que va a `nil` aunque el icono lo pinte.
+</details>
 
-## Notas
+<br/>
 
-En WoW Forever los datos de las auras son **secretos** para los addons en combate, así que el addon no puede leer sin más el bufo del sello. En su lugar sigue **tus propios lanzamientos de sello**, que nunca son secretos, y cuenta la duración del sello (30 s en Forever) desde que lo lanzas. Cuando el juego deja leer la duración real del aura, se usa esa.
-
----
-
-**Autor**: Pirson · [GitHub](https://github.com/Pirson-s-Addons) · [CurseForge](https://www.curseforge.com/members/pirson/projects) · Licencia MIT
+<p align="center"><a href="https://github.com/Pirson-s-Addons"><img src="https://raw.githubusercontent.com/Pirson-s-Addons/.github/main/profile/assets/readme-footer-es.svg" width="100%" alt="Parte de Pirson's Addons. Ver todos los addons."/></a></p>
