@@ -51,6 +51,10 @@ local NO_ECHO_SPELLS = { 21082 }
 -- 1.60.1.70938). Antes de esa build era Twist of Light, con el mismo ID.
 local ECHO_SPELLS = { 1311701, 1311703, 1311704, 1311705, 1328198, 1328206 }
 local ECHO_DURATION, ECHO_MAX = 15, 3
+-- Sello de cada Eco por su rango 1 (Orden, Rectitud, Justicia, Luz, Sabiduria).
+-- El de Furia (1311701) no tiene ID conocido: es el sello del libro que no es clasico.
+local ECHO_SEALS = { [1311703] = 20375, [1311704] = 21084, [1311705] = 20164,
+                     [1328198] = 20165, [1328206] = 20166 }
 -- Talento final de Reprension (Unsealed Wrath): sin el no hay Ecos
 local TWIST_TALENT = 1310735
 -- Muestra para colocar las cosas: Rectitud en el bloque; Rectitud y Orden
@@ -647,9 +651,25 @@ local function AuraStacks(aura)
     return ok and text or nil
 end
 
--- El Eco con mas cargas manda (tras cambiar de sello puede haber dos un momento)
+-- Se pueden leer ahora: fuera de combate siempre (ShouldSpellAuraBeSecret dice
+-- si lo seria en combate, no si lo es ya)
+local function EchoReadableNow()
+    return not C_Secrets.ShouldAurasBeSecret() or EchoAurasReadable()
+end
+
+-- Nombre del sello que guarda un Eco, para seguir deduciendo desde lo leido
+local function EchoSealName(echoID)
+    local sealID = ECHO_SEALS[echoID]
+    if sealID then return C_Spell.GetSpellName(sealID) end
+    for _, name in pairs(knownSeals) do
+        if not sealNames[name] then return name end
+    end
+end
+
+-- El Eco con mas cargas manda (tras cambiar de sello puede haber dos un momento).
+-- Devuelve true si ha leido el aura de verdad.
 local function ScanEchoes()
-    if not EchoAurasReadable() then return end
+    if not EchoReadableNow() then return end
     local best, bestCount, bestID
     for _, spellID in ipairs(ECHO_SPELLS) do
         local ok, aura = pcall(C_UnitAuras.GetPlayerAuraBySpellID, spellID)
@@ -662,19 +682,28 @@ local function ScanEchoes()
     end
     if best then
         echoTex = Readable(best.icon) and best.icon or C_Spell.GetSpellTexture(bestID)
-        echoStacks = AuraStacks(best)
-        echoSeal, echoAt = nil, nil
+        local count = AuraStacks(best)
+        echoStacks = type(count) == "number" and math.max(count, 1) or count
+        -- Se guarda de que sello es y desde cuando: borrarlo hacia que el siguiente
+        -- combate (deducido) volviera a contar desde 1
+        echoSeal = EchoSealName(bestID)
+        local expires = best.expirationTime
+        echoAt = Readable(expires) and expires > 0 and expires - ECHO_DURATION or GetTime()
         Debug(("eco activo: %s x%s"):format(C_Spell.GetSpellName(bestID) or bestID, tostring(bestCount)))
     else
         echoTex, echoStacks, echoSeal, echoAt = nil, nil, nil, nil
     end
     ApplyEcho(best and best.auraInstanceID)
+    return true
 end
 
 local function OnUnitAura(info)
-    if echoIcon then ScanEchoes() end
-    echoAuraAt = GetTime()
-    if ConfirmEcho then ConfirmEcho() end
+    if echoIcon and ScanEchoes() then
+        echoSwingAt = nil -- el aura leida ya incluye ese golpe
+    else
+        echoAuraAt = GetTime()
+        if ConfirmEcho then ConfirmEcho() end
+    end
     if not Readable(info) then
         Debug("UNIT_AURA sin datos legibles")
         RefreshTracked()
@@ -974,12 +1003,13 @@ end
 
 -- Unsealed Wrath sin poder leer su aura: el golpe con otro sello gasta las
 -- cargas guardadas, y luego guarda una del sello activo (hasta ECHO_MAX).
--- ponytail: un golpe fallado cuenta igual (UNIT_COMBAT es secreto en combate).
+-- ponytail: un golpe fallado que coincida con otro cambio de auras cuenta igual
+-- (UNIT_COMBAT es secreto en combate); se corrige al salir de combate (ScanEchoes).
 local function DeduceEcho()
     if not HasTwistTalent() then return end
     if echoSeal and echoSeal ~= activeSeal then echoSeal, echoStacks = nil, nil end
     if activeSeal and HasEcho(activeSeal) then
-        echoStacks = echoSeal == activeSeal and math.min((echoStacks or 0) + 1, ECHO_MAX) or 1
+        echoStacks = echoSeal == activeSeal and math.min((tonumber(echoStacks) or 0) + 1, ECHO_MAX) or 1
         echoSeal, echoAt = activeSeal, GetTime()
     end
     echoTex = echoSeal and SealTexture(echoSeal) or nil
@@ -1009,10 +1039,9 @@ local function OnSwing(duration, swingType)
     -- sale cuando salta, con OnSealEffect. El resto, en cada golpe.
     if activeSeal and not db.effectSeals[activeSeal] then AddHit(SealTexture(activeSeal)) end
     if twisted and not db.effectSeals[sealAtLastSwing] then AddHit(SealTexture(sealAtLastSwing)) end
-    if not EchoAurasReadable() then
-        echoSwingAt = GetTime()
-        ConfirmEcho()
-    end
+    -- Si el aura se lee, manda su UNIT_AURA; si llega ya secreto, se deduce con ConfirmEcho
+    echoSwingAt = GetTime()
+    if not EchoReadableNow() then ConfirmEcho() end
     sealAtLastSwing = activeSeal
     swingStart, swingDuration = GetTime(), duration
     UpdateTicks()
